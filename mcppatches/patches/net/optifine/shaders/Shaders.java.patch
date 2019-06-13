@@ -25,6 +25,15 @@
          {
              if (s1.startsWith(s))
              {
+@@ -1883,7 +1885,7 @@
+     public static void startup(Minecraft mc)
+     {
+         checkShadersModInstalled();
+-        mc = mc;
++        Shaders.mc = mc;
+         mc = Minecraft.getMinecraft();
+         capabilities = GL.getCapabilities();
+         glVersionString = GL11.glGetString(GL11.GL_VERSION);
 @@ -2297,11 +2299,11 @@
  
      private static int getDrawBuffer(Program p, String str, int i)
@@ -39,6 +48,34 @@
          }
          else
          {
+@@ -2311,23 +2313,23 @@
+             {
+                 if (j >= 0 && j <= 1)
+                 {
+-                    i = j + 36064;
++                    d = j + 36064;
+                     usedShadowColorBuffers = Math.max(usedShadowColorBuffers, j);
+                 }
+ 
+-                return i;
++                return d;
+             }
+             else
+             {
+                 if (j >= 0 && j <= 7)
+                 {
+                     p.getToggleColorTextures()[j] = true;
+-                    i = j + 36064;
++                    d = j + 36064;
+                     usedColorAttachs = Math.max(usedColorAttachs, j);
+                     usedColorBuffers = Math.max(usedColorBuffers, j);
+                 }
+ 
+-                return i;
++                return d;
+             }
+         }
+     }
 @@ -4164,10 +4166,10 @@
      {
          if (currentWorld != world)

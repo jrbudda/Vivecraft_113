@@ -29,7 +29,6 @@ import net.minecraft.client.particle.ParticleSpell;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.particles.ParticleType;
 import org.apache.logging.log4j.LogManager;
-import org.lwjgl.openvr.HmdMatrix34;
 import org.vivecraft.render.VRShaders;
 import org.vivecraft.tweaker.MinecriftClassTransformer;
 import org.vivecraft.utils.lwjgl.Matrix3f;
@@ -40,6 +39,7 @@ import org.vivecraft.utils.lwjgl.Vector4f;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+import jopenvr.HmdMatrix34_t;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.math.Vec3d;
 import org.apache.commons.io.IOUtils;
@@ -103,22 +103,22 @@ public class Utils
 		return mat;
 	}
 	
-//	public static HmdMatrix34 convertToMatrix34(Matrix4f matrix) {
-//		HmdMatrix34 mat = HmdMatrix34.create();
-//		mat.m[0 + 0 * 4] = matrix.m00;
-//		mat.m[1 + 0 * 4] = matrix.m10;
-//		mat.m[2 + 0 * 4] = matrix.m20;
-//		mat.m[3 + 0 * 4] = matrix.m30;
-//		mat.m[0 + 1 * 4] = matrix.m01;
-//		mat.m[1 + 1 * 4] = matrix.m11;
-//		mat.m[2 + 1 * 4] = matrix.m21;
-//		mat.m[3 + 1 * 4] = matrix.m31;
-//		mat.m[0 + 2 * 4] = matrix.m02;
-//		mat.m[1 + 2 * 4] = matrix.m12;
-//		mat.m[2 + 2 * 4] = matrix.m22;
-//		mat.m[3 + 2 * 4] = matrix.m32;
-//		return mat;
-//	}
+	public static HmdMatrix34_t convertToMatrix34(Matrix4f matrix) {
+		HmdMatrix34_t mat = new HmdMatrix34_t();
+		mat.m[0 + 0 * 4] = matrix.m00;
+		mat.m[1 + 0 * 4] = matrix.m10;
+		mat.m[2 + 0 * 4] = matrix.m20;
+		mat.m[3 + 0 * 4] = matrix.m30;
+		mat.m[0 + 1 * 4] = matrix.m01;
+		mat.m[1 + 1 * 4] = matrix.m11;
+		mat.m[2 + 1 * 4] = matrix.m21;
+		mat.m[3 + 1 * 4] = matrix.m31;
+		mat.m[0 + 2 * 4] = matrix.m02;
+		mat.m[1 + 2 * 4] = matrix.m12;
+		mat.m[2 + 2 * 4] = matrix.m22;
+		mat.m[3 + 2 * 4] = matrix.m32;
+		return mat;
+	}
 
 	public static double lerp(double from, double to, double percent){
 		return from+(to-from)*percent;

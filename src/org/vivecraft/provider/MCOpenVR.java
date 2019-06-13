@@ -2,9 +2,8 @@ package org.vivecraft.provider;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.*;
 
@@ -30,14 +29,11 @@ import org.vivecraft.utils.HardwareType;
 import org.vivecraft.utils.InputSimulator;
 import org.vivecraft.utils.MCReflection;
 import org.vivecraft.utils.MenuWorldExporter;
-import org.vivecraft.utils.OpenVRUtil;
 import org.vivecraft.utils.Utils;
-import org.vivecraft.utils.VR_IVROCSystem_FnTable;
 import org.vivecraft.utils.Vector2;
 import org.vivecraft.utils.jkatvr;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.ibm.icu.util.UniversalTimeScale;
 import com.sun.jna.Memory;
 import com.sun.jna.NativeLibrary;
 import com.sun.jna.Pointer;
@@ -48,7 +44,29 @@ import de.fruitfly.ovr.structs.EulerOrient;
 import de.fruitfly.ovr.structs.Matrix4f;
 import de.fruitfly.ovr.structs.Quatf;
 import de.fruitfly.ovr.structs.Vector3f;
-
+import jopenvr.HmdMatrix34_t;
+import jopenvr.HmdVector2_t;
+import jopenvr.JOpenVRLibrary;
+import jopenvr.JOpenVRLibrary.EVREventType;
+import jopenvr.OpenVRUtil;
+import jopenvr.RenderModel_ComponentState_t;
+import jopenvr.RenderModel_ControllerMode_State_t;
+import jopenvr.Texture_t;
+import jopenvr.TrackedDevicePose_t;
+import jopenvr.VRControllerAxis_t;
+import jopenvr.VRControllerState_t;
+import jopenvr.VREvent_Controller_t;
+import jopenvr.VREvent_t;
+import jopenvr.VRTextureBounds_t;
+import jopenvr.VRTextureDepthInfo_t;
+import jopenvr.VRTextureWithDepth_t;
+import jopenvr.VR_IVRChaperone_FnTable;
+import jopenvr.VR_IVRCompositor_FnTable;
+import jopenvr.VR_IVROCSystem_FnTable;
+import jopenvr.VR_IVROverlay_FnTable;
+import jopenvr.VR_IVRRenderModels_FnTable;
+import jopenvr.VR_IVRSettings_FnTable;
+import jopenvr.VR_IVRSystem_FnTable;
 import net.minecraft.block.BlockTorch;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiWinGame;
@@ -57,7 +75,6 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovementInputFromOptions;
-import net.minecraft.util.datafix.fixes.LWJGL3KeyOptions;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -65,9 +82,6 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.ArrayUtils;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.openvr.*;
-import org.lwjgl.openvr.TrackedDevicePose.Buffer;
-import org.lwjgl.system.macosx.MacOSXLibraryDL;
 
 public class MCOpenVR 
 {
@@ -75,12 +89,21 @@ public class MCOpenVR
 	private static boolean initialized;
 	static Minecraft mc;
 
+	public static VR_IVRSystem_FnTable vrsystem;
+	static VR_IVRCompositor_FnTable vrCompositor;
+	static VR_IVROverlay_FnTable vrOverlay;
+	static VR_IVRSettings_FnTable vrSettings;
+	static VR_IVRRenderModels_FnTable vrRenderModels;
+	static VR_IVRChaperone_FnTable vrChaperone;
 	public static VR_IVROCSystem_FnTable vrOpenComposite;
 
+	private static IntByReference hmdErrorStore = new IntByReference();
 	private static IntBuffer hmdErrorStoreBuf;
 
-	private static TrackedDevicePose.Buffer hmdTrackedDevicePoses;
-	private static TrackedDevicePose.Buffer hmdGamePoses;
+	private static TrackedDevicePose_t.ByReference hmdTrackedDevicePoseReference;
+	private static TrackedDevicePose_t[] hmdTrackedDevicePoses;
+	private static TrackedDevicePose_t.ByReference hmdGamePoseReference;
+	private static TrackedDevicePose_t[] hmdGamePoses;
 
 	private static Matrix4f[] poseMatrices;
 	private static Vec3d[] deviceVelocity;
@@ -92,15 +115,14 @@ public class MCOpenVR
 	public static final Matrix4f hmdRotation = new Matrix4f();
 	public static Matrix4f hmdProjectionLeftEye;
 	public static Matrix4f hmdProjectionRightEye;
-	public static HmdMatrix44 nhmdProjectionLeftEye;
-	public static HmdMatrix44 nhmdProjectionRightEye;
-
+	
 	static Matrix4f hmdPoseLeftEye = new Matrix4f();
 	static Matrix4f hmdPoseRightEye = new Matrix4f();
 	static boolean initSuccess = false, flipEyes = false;
 
 	private static IntBuffer hmdDisplayFrequency;
 
+	private static float vsyncToPhotons;
 	private static double timePerFrame, frameCountRun;
 	private static long frameCount;
 
@@ -116,11 +138,9 @@ public class MCOpenVR
 	// TextureIDs of framebuffers for each eye
 	private int LeftEyeTextureId;
 
-	static VRTextureBounds texBounds = null;
-	static Texture texType0 = null;
-	static Texture texType1 = null;
-	static VRTextureWithDepth texDepthType0 = null;
-	static VRTextureWithDepth texDepthType1 = null;
+	final static VRTextureBounds_t texBounds = new VRTextureBounds_t();
+	final static VRTextureWithDepth_t texType0 = new VRTextureWithDepth_t();
+	final static VRTextureWithDepth_t texType1 = new VRTextureWithDepth_t();
 	// aiming
 
 	static Vec3d[] aimSource = new Vec3d[3];
@@ -138,11 +158,11 @@ public class MCOpenVR
 	private static Matrix4f[] controllerRotation = new Matrix4f[3];
 	private static Matrix4f[] handRotation = new Matrix4f[3];
 	public static int[] controllerDeviceIndex = new int[3];
-	private static VRControllerState[] inputStateRefernceArray = new VRControllerState[3];
-	private static VRControllerState[] lastControllerState = new VRControllerState[3];
-	private static VRControllerState[] controllerStateReference = new VRControllerState[3];
+	private static VRControllerState_t.ByReference[] inputStateRefernceArray = new VRControllerState_t.ByReference[3];
+	private static VRControllerState_t[] lastControllerState = new VRControllerState_t[3];
+	private static VRControllerState_t[] controllerStateReference = new VRControllerState_t[3];
 
-	private static Queue<VREvent> vrEvents = new LinkedList<>();
+	private static Queue<VREvent_t> vrEvents = new LinkedList<>();
 
 	private static Queue<VRInputEvent> vrInputEvents = new LinkedList<>();
 	private static Map<String, ButtonTuple> activeBindings = new HashMap<>();
@@ -195,8 +215,8 @@ public class MCOpenVR
 	public static final KeyBinding keyMoveThirdPersonCam = new KeyBinding("Move Third Person Camera", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft");
 	public static final KeyBinding keyInteractVRprimary = new KeyBinding("Interact VR Primary",GLFW.GLFW_KEY_UNKNOWN,"Vivecraft");
 	public static final KeyBinding keyInteractVRsecondary = new KeyBinding("Interact VR Secondary",GLFW.GLFW_KEY_UNKNOWN,"Vivecraft");
-
-
+	
+	
 	public MCOpenVR()
 	{
 		super();
@@ -209,13 +229,16 @@ public class MCOpenVR
 			handRotation[c] = new Matrix4f();
 			controllerDeviceIndex[c] = -1;
 
-			lastControllerState[c] = VRControllerState.create();
-			controllerStateReference[c] = VRControllerState.create();
-			inputStateRefernceArray[c] = VRControllerState.create();
+			lastControllerState[c] = new VRControllerState_t();
+			controllerStateReference[c] = new VRControllerState_t();
+			inputStateRefernceArray[c] = new VRControllerState_t.ByReference();
 
+			inputStateRefernceArray[c].setAutoRead(false);
+			inputStateRefernceArray[c].setAutoWrite(false);
+			inputStateRefernceArray[c].setAutoSynch(false);
 			for (int i = 0; i < 5; i++)
 			{
-				lastControllerState[c].rAxis(i,  VRControllerAxis.create());
+				lastControllerState[c].rAxis[i] = new VRControllerAxis_t();
 			}
 
 
@@ -236,44 +259,47 @@ public class MCOpenVR
 
 		mc = Minecraft.getMinecraft();
 
-		//		String osname = System.getProperty("os.name").toLowerCase();
-		//		String osarch= System.getProperty("os.arch").toLowerCase();
-		//
-		//		String osFolder = "win";
-		//
-		//		if( osname.contains("linux")){
-		//			osFolder = "linux";
-		//		}
-		//		else if( osname.contains("mac")){
-		//			osFolder = "osx";
-		//		}
-		//
-		//		if (osarch.contains("64"))
-		//		{
-		//			osFolder += "64";
-		//		} else {
-		//			osFolder += "32";
-		//		}
-		//
-		//		Utils.unpackNatives(osFolder);
-		//
-		//		String openVRPath = new File("openvr/" + osFolder).getAbsolutePath();
-		//		System.out.println("Adding OpenVR search path: " + openVRPath);
-		//		NativeLibrary.addSearchPath("openvr_api", openVRPath);
+		String osname = System.getProperty("os.name").toLowerCase();
+		String osarch= System.getProperty("os.arch").toLowerCase();
 
-		if(!VR.VR_IsHmdPresent()){
+		String osFolder = "win";
+
+		if( osname.contains("linux")){
+			osFolder = "linux";
+		}
+		else if( osname.contains("mac")){
+			osFolder = "osx";
+		}
+
+		if (osarch.contains("64"))
+		{
+			osFolder += "64";
+		} else {
+			osFolder += "32";
+		}
+
+		Utils.unpackNatives(osFolder);
+
+		String openVRPath = new File("openvr/" + osFolder).getAbsolutePath();
+		System.out.println("Adding OpenVR search path: " + openVRPath);
+		NativeLibrary.addSearchPath("openvr_api", openVRPath);
+
+		if(jopenvr.JOpenVRLibrary.VR_IsHmdPresent() == 0){
 			initStatus =  "VR Headset not detected.";
 			return false;
 		}
 
 		try {
-			initializeOpenVR();
-			initOpenVRCompositor(true) ;
+			initializeJOpenVR();
+			initOpenVRCompositor() ;
+			initOpenVRSettings();
+			initOpenVRRenderModels();
+			initOpenVRChaperone();
 			initOpenComposite();
 		} catch (Exception e) {
 			e.printStackTrace();
 			initSuccess = false;
-			initStatus = e.getLocalizedMessage() != null ? e.getLocalizedMessage() : e.getMessage() != null ? e.getMessage() : e.toString();
+			initStatus = e.getLocalizedMessage();
 			return false;
 		}
 
@@ -296,7 +322,7 @@ public class MCOpenVR
 		if (controllers[LEFT_CONTROLLER] instanceof TrackedControllerVive)
 			((TrackedControllerVive)controllers[LEFT_CONTROLLER]).setTouchpadMode(mc.vrSettings.leftTouchpadMode);
 
-		deviceVelocity = new Vec3d[VR.k_unMaxTrackedDeviceCount];
+		deviceVelocity = new Vec3d[JOpenVRLibrary.k_unMaxTrackedDeviceCount];
 
 		for(int i=0;i<poseMatrices.length;i++)
 		{
@@ -304,12 +330,10 @@ public class MCOpenVR
 			deviceVelocity[i] = new Vec3d(0,0,0);
 		}
 
-		HmdMatrix34 matL = HmdMatrix34.create();
-		HmdMatrix34	matR = HmdMatrix34.create();
-		VRSystem.VRSystem_GetEyeToHeadTransform((int)VR.EVREye_Eye_Left, matL);	
+		HmdMatrix34_t matL = vrsystem.GetEyeToHeadTransform.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Left);
 		OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(matL, hmdPoseLeftEye);
 
-		VRSystem.VRSystem_GetEyeToHeadTransform((int)VR.EVREye_Eye_Right, matR);	
+		HmdMatrix34_t matR = vrsystem.GetEyeToHeadTransform.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Right);
 		OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(matR, hmdPoseRightEye);
 
 		initialized = true;
@@ -336,11 +360,11 @@ public class MCOpenVR
 	}
 
 	public static boolean isError(){
-		return hmdErrorStoreBuf.get(0) != 0;
+		return hmdErrorStore.getValue() != 0 || hmdErrorStoreBuf.get(0) != 0;
 	}
 
 	public static int getError(){
-		return hmdErrorStoreBuf.get(0);
+		return hmdErrorStore.getValue() != 0 ? hmdErrorStore.getValue() : hmdErrorStoreBuf.get(0);
 	}
 
 	public static KeyBinding[] initializeBindings(KeyBinding[] keyBindings) {
@@ -379,28 +403,44 @@ public class MCOpenVR
 		return keyBindings;
 	}
 
-	private static void initializeOpenVR() throws Exception { 
+	private static void initializeJOpenVR() throws Exception { 
 		hmdErrorStoreBuf = IntBuffer.allocate(1);
-
-		int token = VR.VR_InitInternal(hmdErrorStoreBuf, VR.EVRApplicationType_VRApplication_Scene);
+		vrsystem = null;
+		JOpenVRLibrary.VR_InitInternal(hmdErrorStoreBuf, JOpenVRLibrary.EVRApplicationType.EVRApplicationType_VRApplication_Scene);
 
 		if(!isError()) {
+			// ok, try and get the vrsystem pointer..
+			vrsystem = new VR_IVRSystem_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRSystem_Version, hmdErrorStoreBuf));
+		}
 
-			OpenVR.create(token);		
+		if( vrsystem == null || isError()) {
+			throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));		
+		} else {
+
+			vrsystem.setAutoSynch(false);
+			vrsystem.read();
 
 			System.out.println("OpenVR initialized & VR connected.");
 
 			hmdDisplayFrequency = IntBuffer.allocate(1);
-			hmdDisplayFrequency.put( (int) VR.ETrackedDeviceProperty_Prop_DisplayFrequency_Float);
-		
-			hmdTrackedDevicePoses = TrackedDevicePose.create(VR.k_unMaxTrackedDeviceCount);
-			hmdGamePoses = TrackedDevicePose.create(VR.k_unMaxTrackedDeviceCount);
-		
-			poseMatrices = new Matrix4f[VR.k_unMaxTrackedDeviceCount];
-			for(int i=0;i<poseMatrices.length;i++) 
-				poseMatrices[i] = new Matrix4f();
+			hmdDisplayFrequency.put( (int) JOpenVRLibrary.ETrackedDeviceProperty.ETrackedDeviceProperty_Prop_DisplayFrequency_Float);
+			hmdTrackedDevicePoseReference = new TrackedDevicePose_t.ByReference();
+			hmdTrackedDevicePoses = (TrackedDevicePose_t[])hmdTrackedDevicePoseReference.toArray(JOpenVRLibrary.k_unMaxTrackedDeviceCount);
+			poseMatrices = new Matrix4f[JOpenVRLibrary.k_unMaxTrackedDeviceCount];
+			for(int i=0;i<poseMatrices.length;i++) poseMatrices[i] = new Matrix4f();
 
 			timePerFrame = 1.0 / hmdDisplayFrequency.get(0);
+
+			// disable all this stuff which kills performance
+			hmdTrackedDevicePoseReference.setAutoRead(false);
+			hmdTrackedDevicePoseReference.setAutoWrite(false);
+			hmdTrackedDevicePoseReference.setAutoSynch(false);
+			
+			for(int i=0;i<JOpenVRLibrary.k_unMaxTrackedDeviceCount;i++) {
+				hmdTrackedDevicePoses[i].setAutoRead(false);
+				hmdTrackedDevicePoses[i].setAutoWrite(false);
+				hmdTrackedDevicePoses[i].setAutoSynch(false);
+			}
 
 			initSuccess = true;
 		}
@@ -410,32 +450,28 @@ public class MCOpenVR
 		Pointer p = new Memory(in.length()+1);
 		p.setString(0, in);
 		return p;
-	}	
-	
-	private static ByteBuffer wrappedString(String in){
-		return ByteBuffer.wrap(in.getBytes());
+
 	}
 
 	static void debugOut(int deviceindex){
 		System.out.println("******************* VR DEVICE: " + deviceindex + " *************************");
-		for(Field i :VR.class.getDeclaredFields()){
+		for(Field i :JOpenVRLibrary.ETrackedDeviceProperty.class.getDeclaredFields()){
 			try {
-				if (!i.getName().contains("ETrackedDeviceProperty_Prop")) continue;
 				String[] ts = i.getName().split("_");
 				String Type = ts[ts.length - 1];
 				String out = "";
 				if (Type.equals("Float")) {
-					out += i.getName() + " " + VRSystem.VRSystem_GetFloatTrackedDeviceProperty(deviceindex, i.getInt(null), hmdErrorStoreBuf);
+					out += i.getName() + " " + vrsystem.GetFloatTrackedDeviceProperty.apply(deviceindex, i.getInt(null), hmdErrorStore);
 				}				else if (Type.equals("String")) {
-					Pointer pointer = new Memory(VR.k_unMaxPropertyStringSize);
-					String s = VRSystem.VRSystem_GetStringTrackedDeviceProperty(deviceindex, i.getInt(null),  VR.k_unMaxPropertyStringSize - 1, hmdErrorStoreBuf);
-					out += i.getName() + " " + s;
+					Pointer pointer = new Memory(JOpenVRLibrary.k_unMaxPropertyStringSize);
+					int len = vrsystem.GetStringTrackedDeviceProperty.apply(deviceindex, i.getInt(null), pointer, JOpenVRLibrary.k_unMaxPropertyStringSize - 1, hmdErrorStore);
+					out += i.getName() + " " + pointer.getString(0);
 				} else if (Type.equals("Bool")) {
-					out += i.getName() + " " + VRSystem.VRSystem_GetBoolTrackedDeviceProperty(deviceindex, i.getInt(null), hmdErrorStoreBuf);
+					out += i.getName() + " " + vrsystem.GetBoolTrackedDeviceProperty.apply(deviceindex, i.getInt(null), hmdErrorStore);
 				} else if (Type.equals("Int32")) {
-					out += i.getName() + " " + VRSystem.VRSystem_GetInt32TrackedDeviceProperty(deviceindex, i.getInt(null), hmdErrorStoreBuf);
+					out += i.getName() + " " + vrsystem.GetInt32TrackedDeviceProperty.apply(deviceindex, i.getInt(null), hmdErrorStore);
 				} else if (Type.equals("Uint64")) {
-					out += i.getName() + " " + VRSystem.VRSystem_GetUint64TrackedDeviceProperty(deviceindex, i.getInt(null), hmdErrorStoreBuf);
+					out += i.getName() + " " + vrsystem.GetUint64TrackedDeviceProperty.apply(deviceindex, i.getInt(null), hmdErrorStore);
 				}else {
 					out += i.getName() + " (skipped)" ; 
 				}
@@ -449,15 +485,65 @@ public class MCOpenVR
 	}
 
 
+	public static void initOpenVRSettings() throws Exception
+	{
+		vrSettings = new VR_IVRSettings_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRSettings_Version, hmdErrorStoreBuf));
+		if (!isError()) {
+			vrSettings.setAutoSynch(false);
+			vrSettings.read();					
+			System.out.println("OpenVR Settings initialized OK");
+		} else {
+			if (getError() != 0) {
+				System.out.println("VRSettings init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+				vrSettings = null;
+			} else {
+				throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+			}	
+		}
+	}
+
+
+	public static void initOpenVRRenderModels() throws Exception
+	{
+		vrRenderModels = new VR_IVRRenderModels_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRRenderModels_Version, hmdErrorStoreBuf));
+		if (!isError()) {
+			vrRenderModels.setAutoSynch(false);
+			vrRenderModels.read();			
+			System.out.println("OpenVR RenderModels initialized OK");
+		} else {
+			if (getError() != 0) {
+				System.out.println("VRRenderModels init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+				vrRenderModels = null;
+			} else {
+				throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+			}
+		}
+	}
+
+	private static void initOpenVRChaperone() throws Exception {
+		vrChaperone = new VR_IVRChaperone_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRChaperone_Version, hmdErrorStoreBuf));
+		if (!isError()) {
+			vrChaperone.setAutoSynch(false);
+			vrChaperone.read();
+			System.out.println("OpenVR chaperone initialized.");
+		} else {
+			if (getError() != 0) {
+				System.out.println("VRChaperone init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+				vrChaperone = null;
+			} else {
+				throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+			}
+		}
+	}
+
 	private static void initOpenComposite() throws Exception {
-		Long p = VR.VR_GetGenericInterface(VR_IVROCSystem_FnTable.Version, hmdErrorStoreBuf);		
-		if (p-- > 0 && !isError()) {		
-			vrOpenComposite = new VR_IVROCSystem_FnTable(Pointer.createConstant(p));
+		vrOpenComposite = new VR_IVROCSystem_FnTable(JOpenVRLibrary.VR_GetGenericInterface(VR_IVROCSystem_FnTable.Version, hmdErrorStoreBuf));
+		if (!isError()) {
 			vrOpenComposite.setAutoSynch(false);
 			vrOpenComposite.read();
 			System.out.println("OpenComposite initialized.");
 		} else {
-			System.out.println("OpenComposite Not Found: " + VR.VR_GetVRInitErrorAsEnglishDescription(getError()));
+			System.out.println("OpenComposite not found: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
 			vrOpenComposite = null;
 		}
 	}
@@ -468,6 +554,7 @@ public class MCOpenVR
 	private static Map<Long, String> controllerComponentNames;
 
 	private static void getTransforms(){
+		if (vrRenderModels == null) return;
 
 		if(getXforms == true) {
 			controllerComponentTransforms = new HashMap<String, Matrix4f[]>();
@@ -477,7 +564,8 @@ public class MCOpenVR
 			controllerComponentNames = new HashMap<Long, String>();
 		}
 
-		int count = VRRenderModels.VRRenderModels_GetRenderModelCount();
+		int count = vrRenderModels.GetRenderModelCount.apply();
+		Pointer pointer = new Memory(JOpenVRLibrary.k_unMaxPropertyStringSize);
 
 		List<String> componentNames = new ArrayList<String>(); //TODO get the controller-specific list
 
@@ -488,44 +576,33 @@ public class MCOpenVR
 		boolean failed = false;
 		
 		for (String comp : componentNames) {
-			
 			controllerComponentTransforms.put(comp, new Matrix4f[2]); 			
+			Pointer p = ptrFomrString(comp);
 
 			for (int i = 0; i < 2; i++) {
-				
-				if (controllerDeviceIndex[i] == -1) continue;
-				
+
 				//	debugOut(controllerDeviceIndex[i]);
 
-				String prop = VRSystem.VRSystem_GetStringTrackedDeviceProperty(controllerDeviceIndex[i], VR.ETrackedDeviceProperty_Prop_RenderModelName_String,  VR.k_unMaxPropertyStringSize - 1, hmdErrorStoreBuf);
-
-				ByteBuffer compp = wrappedString(comp);
-				ByteBuffer propp = wrappedString(prop);
+				vrsystem.GetStringTrackedDeviceProperty.apply(controllerDeviceIndex[i], JOpenVRLibrary.ETrackedDeviceProperty.ETrackedDeviceProperty_Prop_RenderModelName_String, pointer, JOpenVRLibrary.k_unMaxPropertyStringSize - 1, hmdErrorStore);
 
 				//doing this next bit for each controller because pointer
-				long button = VRRenderModels.VRRenderModels_GetComponentButtonMask(propp, compp);   
-
+				long button = vrRenderModels.GetComponentButtonMask.apply(pointer, p);   		
 				if(button > 0){ //see now... wtf openvr, '0' is the system button, it cant also be the error value!
 					controllerComponentNames.put(button, comp); //u get 1 button per component, nothing more
 				}
 				//
-
-				RenderModelControllerModeState modeState = RenderModelControllerModeState.create();
-				RenderModelComponentState componentState = RenderModelComponentState.create();
-
-				boolean ok = VRRenderModels.VRRenderModels_GetComponentState(propp, compp, controllerStateReference[i], modeState, componentState);
-				if(!ok) {
+				RenderModel_ControllerMode_State_t modeState = new RenderModel_ControllerMode_State_t();
+				RenderModel_ComponentState_t componentState = new RenderModel_ComponentState_t();
+				byte ret = vrRenderModels.GetComponentState.apply(pointer, p, controllerStateReference[i], modeState, componentState);
+				if(ret == 0) {
 					//System.out.println("Failed getting transform: " + comp + " controller " + i);
 					failed = true; // Oculus does not seem to raise ANY trackedDevice events. So just keep trying...
 					continue;
 				}
-
 				Matrix4f xform = new Matrix4f();
-
-				OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(componentState.mTrackingToComponentLocal(), xform);
-
+				OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(componentState.mTrackingToComponentLocal, xform);
 				controllerComponentTransforms.get(comp)[i] = xform;
-				//	System.out.println("Transform: " + comp + " controller: " + i +" button: " + button + "\r" + Utils.convertOVRMatrix(xform).toString());
+			//	System.out.println("Transform: " + comp + " controller: " + i +" button: " + button + "\r" + Utils.convertOVRMatrix(xform).toString());
 
 				if (!failed && i == 0) {
 					try {
@@ -536,14 +613,16 @@ public class MCOpenVR
 						Vector3f tipvec = tip.transform(forward);
 						Vector3f handvec = hand.transform(forward);
 
-						double anglerad = Math.acos(tipvec.normalised().dot(handvec.normalised()));
+						double dot = Math.abs(tipvec.normalised().dot(handvec.normalised()));
+						
+						double anglerad = Math.acos(dot);
 						double angledeg = Math.toDegrees(anglerad);
 
 						double angletestrad = Math.acos(tipvec.normalised().dot(forward.normalised()));
 						double angletestdeg = Math.toDegrees(angletestrad);
 
-						//	System.out.println("gun angle " + angledeg + " default angle " + angletestdeg);
-
+					//	System.out.println("gun angle " + angledeg + " default angle " + angletestdeg);
+						
 						gunStyle = angledeg > 10;
 
 					} catch (Exception e) {
@@ -573,67 +652,76 @@ public class MCOpenVR
 		return vrOpenComposite != null;
 	}
 
-	public static void initOpenVRCompositor(boolean set) throws Exception
+	public static void initOpenVRCompositor() throws Exception
 	{
-		if(set) {
-		
-			if(!isError()){                
-			
+		if(vrsystem != null ) {
+			vrCompositor = new VR_IVRCompositor_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRCompositor_Version, hmdErrorStoreBuf));
+			if(vrCompositor != null && !isError()){                
 				System.out.println("OpenVR Compositor initialized OK.");
-				
-				VRCompositor.VRCompositor_SetTrackingSpace(VR.ETrackingUniverseOrigin_TrackingUniverseStanding);	
+				vrCompositor.setAutoSynch(false);
+				vrCompositor.read();
+				vrCompositor.SetTrackingSpace.apply(JOpenVRLibrary.ETrackingUniverseOrigin.ETrackingUniverseOrigin_TrackingUniverseStanding);
 
-				int buffsize=VR.k_unMaxPropertyStringSize;
-				
-				ByteBuffer s = ByteBuffer.allocate(buffsize);
+				int buffsize=20;
+				Pointer s=new Memory(buffsize);
 
-				System.out.println("TrackingSpace: " + VRCompositor.VRCompositor_GetTrackingSpace());
+				System.out.println("TrackingSpace: "+vrCompositor.GetTrackingSpace.apply());
 
-				VRSystem.VRSystem_GetStringTrackedDeviceProperty(VR.k_unTrackedDeviceIndex_Hmd,VR.ETrackedDeviceProperty_Prop_ManufacturerName_String,s, hmdErrorStoreBuf);
-				
-				String id= new String(s.array());
+				vrsystem.GetStringTrackedDeviceProperty.apply(JOpenVRLibrary.k_unTrackedDeviceIndex_Hmd,JOpenVRLibrary.ETrackedDeviceProperty.ETrackedDeviceProperty_Prop_ManufacturerName_String,s,buffsize,hmdErrorStore);
+				String id=s.getString(0);
 				System.out.println("Device manufacturer is: "+id);
 
 				detectedHardware = HardwareType.fromManufacturer(id);
 				mc.vrSettings.loadOptions();
 
 			} else {
-				throw new Exception(VR.VR_GetVRInitErrorAsEnglishDescription(getError()));			 
+				throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));			 
 			}
 		}
-		
+		if( vrCompositor == null ) {
+			System.out.println("Skipping VR Compositor...");
+			if( vrsystem != null ) {
+				vsyncToPhotons = vrsystem.GetFloatTrackedDeviceProperty.apply(JOpenVRLibrary.k_unTrackedDeviceIndex_Hmd, JOpenVRLibrary.ETrackedDeviceProperty.ETrackedDeviceProperty_Prop_SecondsFromVsyncToPhotons_Float, hmdErrorStore);
+			} else {
+				vsyncToPhotons = 0f;
+			}
+		}
+
 		// left eye
-		
-		texBounds = VRTextureBounds.create();
-		texBounds.uMax(1f);
-		texBounds.uMin(0f);
-		texBounds.vMax(1f);
-		texBounds.vMin(0f);
-		
-		texType0 = texType0.create();	
-		texType0.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
-		texType0.eType(VR.ETextureType_TextureType_OpenGL);
-		texType0.handle(-1);
-//		HmdVector2 range = HmdVector2.create();
-//		range.v(0, 0.0f);
-//		range.v(1, 1.0f);
-//		VRTextureDepthInfo info = VRTextureDepthInfo.create();
-//		info.handle(-1);
-//		info.mProjection(nhmdProjectionLeftEye);
-//		info.vRange(range);
-//		texDepthType0 = texDepthType0.create();	
-//		texDepthType0.depth(info);
-		
-		texType1 = texType1.create();	
-		texType1.eColorSpace(VR.EColorSpace_ColorSpace_Gamma);
-		texType1.eType(VR.ETextureType_TextureType_OpenGL);
-		texType1.handle(-1);
-//		VRTextureDepthInfo info2 = VRTextureDepthInfo.create();
-//		info.handle(-1);
-//		info.mProjection(nhmdProjectionRightEye);
-//		info.vRange(range);
-//		texDepthType1 = texDepthType1.create();	
-//		texDepthType1.depth(info2);
+		texBounds.uMax = 1f;
+		texBounds.uMin = 0f;
+		texBounds.vMax = 1f;
+		texBounds.vMin = 0f;
+		texBounds.setAutoSynch(false);
+		texBounds.setAutoRead(false);
+		texBounds.setAutoWrite(false);
+		texBounds.write();
+
+
+		// texture type
+		texType0.eColorSpace = JOpenVRLibrary.EColorSpace.EColorSpace_ColorSpace_Gamma;
+		texType0.eType = JOpenVRLibrary.ETextureType.ETextureType_TextureType_OpenGL;
+		texType0.handle = Pointer.createConstant(-1);
+		VRTextureDepthInfo_t info = new VRTextureDepthInfo_t();
+		info.vRange = new HmdVector2_t(new float[]{0,1});
+		texType0.depth = info;
+		texType0.setAutoSynch(false);
+		texType0.setAutoRead(false);
+		texType0.setAutoWrite(false);
+		texType0.write();
+
+
+		// texture type
+		texType1.eColorSpace = JOpenVRLibrary.EColorSpace.EColorSpace_ColorSpace_Gamma;
+		texType1.eType = JOpenVRLibrary.ETextureType.ETextureType_TextureType_OpenGL;
+		texType1.handle = Pointer.createConstant(-1);
+		VRTextureDepthInfo_t info2 = new VRTextureDepthInfo_t();
+		info2.vRange = new HmdVector2_t(new float[]{0,1});
+		texType0.depth = info2;
+		texType1.setAutoSynch(false);
+		texType1.setAutoRead(false);
+		texType1.setAutoWrite(false);
+		texType1.write();
 
 		System.out.println("OpenVR Compositor initialized OK.");
 
@@ -660,7 +748,7 @@ public class MCOpenVR
 	{
 		boolean sleeping = (mc.world !=null && mc.player != null && mc.player.isPlayerSleeping());
 
-		paused = VRSystem.VRSystem_ShouldApplicationPause();
+		paused = vrsystem.ShouldApplicationPause.apply() != 0;
 
 		mc.profiler.startSection("events");
 		pollVREvents();
@@ -779,7 +867,7 @@ public class MCOpenVR
 		if (initialized)
 		{
 			try {
-				VR.VR_ShutdownInternal();
+				JOpenVRLibrary.VR_ShutdownInternal();
 				initialized = false;
 				if(Main.katvr)
 					jkatvr.Halt();
@@ -832,11 +920,11 @@ public class MCOpenVR
 		controllerDeviceIndex[THIRD_CONTROLLER] = -1;
 
 		if(mc.vrSettings.vrReverseHands){
-			controllerDeviceIndex[RIGHT_CONTROLLER]  = VRSystem.VRSystem_GetTrackedDeviceIndexForControllerRole(VR.ETrackedControllerRole_TrackedControllerRole_LeftHand);
-			controllerDeviceIndex[LEFT_CONTROLLER] = VRSystem.VRSystem_GetTrackedDeviceIndexForControllerRole(VR.ETrackedControllerRole_TrackedControllerRole_RightHand);
+			controllerDeviceIndex[RIGHT_CONTROLLER]  = vrsystem.GetTrackedDeviceIndexForControllerRole.apply(JOpenVRLibrary.ETrackedControllerRole.ETrackedControllerRole_TrackedControllerRole_LeftHand);
+			controllerDeviceIndex[LEFT_CONTROLLER] = vrsystem.GetTrackedDeviceIndexForControllerRole.apply(JOpenVRLibrary.ETrackedControllerRole.ETrackedControllerRole_TrackedControllerRole_RightHand);
 		}else {
-			controllerDeviceIndex[LEFT_CONTROLLER]  = VRSystem.VRSystem_GetTrackedDeviceIndexForControllerRole(VR.ETrackedControllerRole_TrackedControllerRole_LeftHand);
-			controllerDeviceIndex[RIGHT_CONTROLLER] = VRSystem.VRSystem_GetTrackedDeviceIndexForControllerRole(VR.ETrackedControllerRole_TrackedControllerRole_RightHand);
+			controllerDeviceIndex[LEFT_CONTROLLER]  = vrsystem.GetTrackedDeviceIndexForControllerRole.apply(JOpenVRLibrary.ETrackedControllerRole.ETrackedControllerRole_TrackedControllerRole_LeftHand);
+			controllerDeviceIndex[RIGHT_CONTROLLER] = vrsystem.GetTrackedDeviceIndexForControllerRole.apply(JOpenVRLibrary.ETrackedControllerRole.ETrackedControllerRole_TrackedControllerRole_RightHand);
 		}
 
 		controllers[RIGHT_CONTROLLER].deviceIndex = controllerDeviceIndex[RIGHT_CONTROLLER];
@@ -848,26 +936,38 @@ public class MCOpenVR
 	{
 		for (int c = 0; c < 2; c++) //each controller
 		{
-			lastControllerState[c] = controllerStateReference[c];
-			
+			// store previous state
+			lastControllerState[c].unPacketNum = controllerStateReference[c].unPacketNum;
+			lastControllerState[c].ulButtonPressed = controllerStateReference[c].ulButtonPressed;
+			lastControllerState[c].ulButtonTouched = controllerStateReference[c].ulButtonTouched;
+
+			for (int i = 0; i < 5; i++) //5 axes but only [0] and [1] is anything, trigger and touchpad
+			{
+				if (controllerStateReference[c].rAxis[i] != null)
+				{
+					lastControllerState[c].rAxis[i].x = controllerStateReference[c].rAxis[i].x;
+					lastControllerState[c].rAxis[i].y = controllerStateReference[c].rAxis[i].y;
+				}
+			}
+
 			// read new state
 			if (controllerDeviceIndex[c] != -1)
 			{			
-				inputStateRefernceArray[c] = VRControllerState.create();
-				VRSystem.VRSystem_GetControllerState(controllerDeviceIndex[c], inputStateRefernceArray[c], inputStateRefernceArray[c].sizeof());
+				vrsystem.GetControllerState.apply(controllerDeviceIndex[c], inputStateRefernceArray[c], inputStateRefernceArray[c].size());
+				inputStateRefernceArray[c].read();
 				controllerStateReference[c] = inputStateRefernceArray[c];			
 			} else
 			{
 				// controller not connected, clear state
-				lastControllerState[c].ulButtonPressed(0);
-				lastControllerState[c].ulButtonPressed(0);
+				lastControllerState[c].ulButtonPressed = 0;
+				lastControllerState[c].ulButtonPressed = 0;
 
 				for (int i = 0; i < 5; i++)
 				{
-					if (controllerStateReference[c].rAxis(i) != null)
+					if (controllerStateReference[c].rAxis[i] != null)
 					{
-						lastControllerState[c].rAxis(i).x(0.0f);
-						lastControllerState[c].rAxis(i).y(0.0f);
+						lastControllerState[c].rAxis[i].x = 0.0f;
+						lastControllerState[c].rAxis[i].y = 0.0f;
 					}
 				}
 				try{
@@ -1324,35 +1424,33 @@ public class MCOpenVR
 		}
 	}
 
-//	private static String findEvent(int eventcode) {
-//		Field[] fields = EVREventType.class.getFields();
-//
-//		for (Field field : fields) {
-//			if (field.getType() == Integer.TYPE) {
-//				String n = field.getName();
-//				int val;
-//				try {
-//					val = field.getInt(null);
-//					if(val == eventcode) return n;
-//				} catch (IllegalArgumentException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				} catch (IllegalAccessException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
-//		}
-//		return "";
-//	}
+	private static String findEvent(int eventcode) {
+		Field[] fields = EVREventType.class.getFields();
+
+		for (Field field : fields) {
+			if (field.getType() == Integer.TYPE) {
+				String n = field.getName();
+				int val;
+				try {
+					val = field.getInt(null);
+					if(val == eventcode) return n;
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		return "";
+	}
 
 	// Valve why do we have to poll events before we can get updated controller state?
 	private static void pollVREvents()
 	{
-		VREvent event = VREvent.create();
-
-		while (VRSystem.VRSystem_PollNextEvent(event))
-		{
+		if (vrsystem == null) return;
+		for (VREvent_t event = new VREvent_t(); vrsystem.PollNextEvent.apply(event, event.size()) > 0; event = new VREvent_t()) {
 			vrEvents.add(event);
 		}
 	}
@@ -1360,10 +1458,10 @@ public class MCOpenVR
 	//jrbuda:: oh hello there you are.
 	private static void processVREvents() {
 		while (!vrEvents.isEmpty()) {
-			VREvent event = vrEvents.poll();
+			VREvent_t event = vrEvents.poll();
 			//System.out.println("SteamVR Event: " + findEvent(event.eventType));
 
-			switch (event.eventType()) {
+			switch (event.eventType) {
 				/*case EVREventType.EVREventType_VREvent_KeyboardClosed:
 					//'huzzah'
 					keyboardShowing = false;
@@ -1401,26 +1499,26 @@ public class MCOpenVR
 						KeyboardSimulator.type(str); //holy shit it works.
 					}
 					break;*/
-				case VR.EVREventType_VREvent_ButtonTouch:
+				case EVREventType.EVREventType_VREvent_ButtonTouch:
 					if (!mc.vrSettings.seated) handleButtonEvent(event, true, false);
 					break;
-				case VR.EVREventType_VREvent_ButtonPress:
+				case EVREventType.EVREventType_VREvent_ButtonPress:
 					if (!mc.vrSettings.seated) handleButtonEvent(event, true, true);
 					break;
-				case VR.EVREventType_VREvent_ButtonUntouch:
+				case EVREventType.EVREventType_VREvent_ButtonUntouch:
 					if (!mc.vrSettings.seated) handleButtonEvent(event, false, false);
 					break;
-				case VR.EVREventType_VREvent_ButtonUnpress:
+				case EVREventType.EVREventType_VREvent_ButtonUnpress:
 					if (!mc.vrSettings.seated) handleButtonEvent(event, false, true);
 					break;
-				case VR.EVREventType_VREvent_Quit:
+				case EVREventType.EVREventType_VREvent_Quit:
 					mc.shutdown();
 					break;
-				case VR.EVREventType_VREvent_TrackedDeviceActivated:
-				case VR.EVREventType_VREvent_TrackedDeviceDeactivated:
-				case VR.EVREventType_VREvent_TrackedDeviceRoleChanged:
-				case VR.EVREventType_VREvent_TrackedDeviceUpdated:
-				case VR.EVREventType_VREvent_ModelSkinSettingsHaveChanged:
+				case EVREventType.EVREventType_VREvent_TrackedDeviceActivated:
+				case EVREventType.EVREventType_VREvent_TrackedDeviceDeactivated:
+				case EVREventType.EVREventType_VREvent_TrackedDeviceRoleChanged:
+				case EVREventType.EVREventType_VREvent_TrackedDeviceUpdated:
+				case EVREventType.EVREventType_VREvent_ModelSkinSettingsHaveChanged:
 					getXforms = true;
 					break;
 				default:
@@ -1429,15 +1527,15 @@ public class MCOpenVR
 		}
 	}
 
-	private static void handleButtonEvent(VREvent event, boolean state, boolean press) {
-		VREventController controllerEvent = VREventController.create(event.address()); // its like casting, but with DANGER!
-		
-		if (event.trackedDeviceIndex() == -1) return;
-		if (controllerDeviceIndex[RIGHT_CONTROLLER] == event.trackedDeviceIndex()) {
-			controllers[RIGHT_CONTROLLER].processButtonEvent(controllerEvent.button(), state, press);
+	private static void handleButtonEvent(VREvent_t event, boolean state, boolean press) {
+		VREvent_Controller_t controllerEvent = new VREvent_Controller_t(event.data.getPointer());
+		controllerEvent.read();
+		if (event.trackedDeviceIndex == -1) return;
+		if (controllerDeviceIndex[RIGHT_CONTROLLER] == event.trackedDeviceIndex) {
+			controllers[RIGHT_CONTROLLER].processButtonEvent(controllerEvent.button, state, press);
 		}
-		if (controllerDeviceIndex[LEFT_CONTROLLER] == event.trackedDeviceIndex()) {
-			controllers[LEFT_CONTROLLER].processButtonEvent(controllerEvent.button(), state, press);
+		if (controllerDeviceIndex[LEFT_CONTROLLER] == event.trackedDeviceIndex) {
+			controllers[LEFT_CONTROLLER].processButtonEvent(controllerEvent.button, state, press);
 		}
 	}
 
@@ -1505,8 +1603,10 @@ public class MCOpenVR
 
 	private static void updatePose()
 	{
-	
-		int ret = VRCompositor.VRCompositor_WaitGetPoses(hmdTrackedDevicePoses, hmdGamePoses);
+		if ( vrsystem == null || vrCompositor == null )
+			return;
+
+		int ret = vrCompositor.WaitGetPoses.apply(hmdTrackedDevicePoseReference, JOpenVRLibrary.k_unMaxTrackedDeviceCount, null, 0);
 
 		if (ret>0)
 			System.out.println("Compositor Error: GetPoseError " + OpenVRStereoRenderer.getCompostiorError(ret)); 
@@ -1521,16 +1621,17 @@ public class MCOpenVR
 			findControllerDevices(); 
 		}
 
-		for (int nDevice = 0; nDevice < VR.k_unMaxTrackedDeviceCount; ++nDevice )
+		for (int nDevice = 0; nDevice < JOpenVRLibrary.k_unMaxTrackedDeviceCount; ++nDevice )
 		{
-			if (hmdTrackedDevicePoses.get(nDevice).bPoseIsValid())
+			hmdTrackedDevicePoses[nDevice].read();
+			if ( hmdTrackedDevicePoses[nDevice].bPoseIsValid != 0 )
 			{
-				OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(hmdTrackedDevicePoses.get(nDevice).mDeviceToAbsoluteTracking(), poseMatrices[nDevice]);
-				deviceVelocity[nDevice] = new Vec3d(hmdTrackedDevicePoses.get(nDevice).vVelocity().v(0),hmdTrackedDevicePoses.get(nDevice).vVelocity().v(1),hmdTrackedDevicePoses.get(nDevice).vVelocity().v(2));
+				jopenvr.OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(hmdTrackedDevicePoses[nDevice].mDeviceToAbsoluteTracking, poseMatrices[nDevice]);
+				deviceVelocity[nDevice] = new Vec3d(hmdTrackedDevicePoses[nDevice].vVelocity.v[0],hmdTrackedDevicePoses[nDevice].vVelocity.v[1],hmdTrackedDevicePoses[nDevice].vVelocity.v[2]);
 				if(mc.vrSettings.displayMirrorMode == VRSettings.MIRROR_MIXED_REALITY || mc.vrSettings.displayMirrorMode == VRSettings.MIRROR_THIRD_PERSON){
 					if(controllerDeviceIndex[0]!= -1 && controllerDeviceIndex[1] != -1 ){
-						int c = VRSystem.VRSystem_GetTrackedDeviceClass(nDevice);
-						int r = VRSystem.VRSystem_GetControllerRoleForTrackedDeviceIndex(nDevice);
+						int c = vrsystem.GetTrackedDeviceClass.apply(nDevice);
+						int r = vrsystem.GetControllerRoleForTrackedDeviceIndex.apply(nDevice);
 						if((c == 2 && r == 0) || c == 3) {
 							controllerDeviceIndex[THIRD_CONTROLLER] = nDevice;
 						}
@@ -1539,9 +1640,9 @@ public class MCOpenVR
 			}		
 		}
 
-		if (hmdTrackedDevicePoses.get(VR.k_unTrackedDeviceIndex_Hmd).bPoseIsValid())
+		if (hmdTrackedDevicePoses[JOpenVRLibrary.k_unTrackedDeviceIndex_Hmd].bPoseIsValid != 0 )
 		{
-			OpenVRUtil.Matrix4fCopy(poseMatrices[VR.k_unTrackedDeviceIndex_Hmd], hmdPose);
+			OpenVRUtil.Matrix4fCopy(poseMatrices[JOpenVRLibrary.k_unTrackedDeviceIndex_Hmd], hmdPose);
 			headIsTracking = true;
 		}
 		else
@@ -1620,11 +1721,11 @@ public class MCOpenVR
 	 * @return Play area size or null if not valid
 	 */
 	public static float[] getPlayAreaSize() {
-		if (!initSuccess) return new float[]{1,1};
-		FloatBuffer bufz = FloatBuffer.allocate(1);
-		FloatBuffer bufx = FloatBuffer.allocate(1);
-		boolean valid = VRChaperone.VRChaperone_GetPlayAreaSize(bufx, bufz);
-		if (valid) return new float[]{bufx.get()*mc.vrSettings.walkMultiplier, bufz.get()*mc.vrSettings.walkMultiplier};
+		if (vrChaperone == null || vrChaperone.GetPlayAreaSize == null) return null;
+		FloatByReference bufz = new FloatByReference();
+		FloatByReference bufx = new FloatByReference();
+		byte valid = vrChaperone.GetPlayAreaSize.apply(bufx, bufz);
+		if (valid == 1) return new float[]{bufx.getValue()*mc.vrSettings.walkMultiplier, bufz.getValue()*mc.vrSettings.walkMultiplier};
 		return null;
 	}
 
@@ -1680,6 +1781,12 @@ public class MCOpenVR
 	}
 
 
+	public boolean initBodyAim() throws Exception
+	{
+		return init();
+	}
+
+
 	public static Vec3d getAimSource( int controller ) {
 		Vec3d out = new Vec3d(aimSource[controller].x, aimSource[controller].y, aimSource[controller].z);
 		if(!mc.vrSettings.seated && mc.vrSettings.allowStandingOriginOffset)
@@ -1691,7 +1798,7 @@ public class MCOpenVR
 		if(Minecraft.getMinecraft().vrSettings.seated) return;
 		if (controllerDeviceIndex[controller]==-1)
 			return;
-		VRSystem.VRSystem_TriggerHapticPulse(controllerDeviceIndex[controller], 0, (short)strength);
+		vrsystem.TriggerHapticPulse.apply(controllerDeviceIndex[controller], 0, (short)strength);
 	}
 	
 	public static void triggerHapticPulse(ControllerType controller, int strength) {

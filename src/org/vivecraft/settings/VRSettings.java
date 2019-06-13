@@ -108,7 +108,7 @@ public class VRSettings
 	public TouchpadMode leftTouchpadMode = TouchpadMode.SPLIT_UD;
 	public TouchpadMode rightTouchpadMode = TouchpadMode.SINGLE;
 	public boolean freemoveWMRStick = true;
-	public float analogDeadzone = 0.05F;
+	public float analogDeadzone = 0.10f;
     public float vrWorldScale = 1.0f;
     public float vrWorldRotation = 0f;
 	public float vrWorldRotationCached;
@@ -593,6 +593,8 @@ public class VRSettings
                     }
 					if(optionTokens[0].equals("physicalGuiEnabled")){
 						this.physicalGuiEnabled=optionTokens[1].equals("true");
+						//TEMP
+						this.physicalGuiEnabled=false;
 					}
                     if(optionTokens[0].equals("seatedhmd")){
                         this.seatedUseHMD=optionTokens[1].equals("true");

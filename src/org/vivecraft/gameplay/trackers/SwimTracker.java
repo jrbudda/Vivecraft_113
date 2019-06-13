@@ -24,9 +24,11 @@ public class SwimTracker extends Tracker {
 	}
 
 	public boolean isActive(EntityPlayerSP p){
-		if(Minecraft.getMinecraft().vrSettings.seated)
+		if(mc.vrSettings.seated)
 			return false;
-		if(!Minecraft.getMinecraft().vrSettings.realisticSwimEnabled)
+		if(!mc.vrSettings.realisticSwimEnabled)
+			return false;
+		if(mc.currentScreen != null)
 			return false;
 		if(p==null || p.isDead)
 			return false;

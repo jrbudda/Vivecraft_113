@@ -111,7 +111,8 @@ public class GuiStandingSettings extends GuiVROptionsBase
 		vr.analogMovement = true;
 		vr.vrTeleportDownLimit = 4;
 		vr.vrTeleportUpLimit = 1;
-		vr.vrTeleportHorizLimit = 16;    
+		vr.vrTeleportHorizLimit = 16;
+		vr.analogDeadzone = 0.10f;
 		Minecraft.getMinecraft().gameSettings.viewBobbing = true;
 		Minecraft.getMinecraft().gameSettings.saveOptions();
 		Minecraft.getMinecraft().vrSettings.saveOptions();

@@ -134,8 +134,7 @@ public abstract class PhysicalGui{
 	 */
 	public static Quaternion getBlockOrientation(BlockPos pos) {
 		IBlockState blockState = Minecraft.getMinecraft().world.getBlockState(pos);
-		
-		Debug d=new Debug(new Vec3d(pos.getX()+0.5,pos.getY()+0.5,pos.getZ()+0.5));
+	//	Debug d=new Debug(new Vec3d(pos.getX()+0.5,pos.getY()+0.5,pos.getZ()+0.5));
 		Vec3d dir;
 		if (blockState.getProperties().contains(BlockHorizontal.HORIZONTAL_FACING)) {
 			EnumFacing facing = blockState.get(BlockHorizontal.HORIZONTAL_FACING);
@@ -153,10 +152,12 @@ public abstract class PhysicalGui{
 		}
 		
 		if (dir.x==0 && dir.y == 0 && dir.z == -1) {
-			return new Quaternion(0, 180, 0); //parallel vectors need special case
+			return new Quaternion(0, 180, 0); //parallel vectors need special case		
 		}
-		d.drawVector(Vec3d.ZERO,dir, Color.green);
-		d.drawVector(Vec3d.ZERO,new Vec3d(0,0,1),Color.red);
+		
+	//	d.drawVector(Vec3d.ZERO,dir, Color.green);
+	//	d.drawVector(Vec3d.ZERO,new Vec3d(0,0,1),Color.red);
+		
 		return Quaternion.createFromToVector(new Vector3(0, 0, 1), new Vector3(dir));
 	}
 

@@ -781,7 +781,7 @@
 +        	TextureAtlasSprite tex = this.mc.getBlockRendererDispatcher().getBlockModelShapes().getTexture(iblockstate);
 +        	this.renderFaceInBlock();
 +        	mc.entityRenderer.inblock = true;
-+        	mc.entityRenderer.renderGuiLayer(partialTicks);
++        	mc.entityRenderer.renderVRGuiElements(false, partialTicks);
 +
 +        	//            IBlockState iblockstate = this.mc.world.getBlockState(new BlockPos(this.mc.player));
 +        	//            BlockPos blockpos = new BlockPos(this.mc.player);

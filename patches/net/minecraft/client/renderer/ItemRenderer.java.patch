@@ -18,14 +18,14 @@
 +    //Vivecraft
 +    public static boolean ismainhand = false;
 +    public static boolean isfphand = false;
-+    float fade = 1;
++    float fade = 1, lastfade = 1;
 +    private GlAlphaState alphaState = new GlAlphaState();
 +    //
 +    
      public ItemRenderer(TextureManager textureManagerIn, ModelManager modelManagerIn, ItemColors itemColorsIn)
      {
          this.textureManager = textureManagerIn;
-@@ -141,11 +152,43 @@
+@@ -141,11 +152,47 @@
          {
              GlStateManager.pushMatrix();
              GlStateManager.translatef(-0.5F, -0.5F, -0.5F);
@@ -47,7 +47,7 @@
 +                		fade = 1;
 +                	else
 +                		fade = 0.75f;
- 
++
 +                if(fade < 0.1) fade = 0.1f;
 +                if(fade > 1) fade = 1f;
 +                GlStateManager.enableBlend();
@@ -58,6 +58,10 @@
 +                } else {
 +                    GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
 +                }
++                lastfade = fade;
+ 
++            } else {
++            	fade = 1;
 +            }
 +            
              if (model.isBuiltInRenderer())
@@ -71,20 +75,19 @@
  
                  if (Reflector.ForgeItem_getTileEntityItemStackRenderer.exists())
                  {
-@@ -189,9 +232,21 @@
+@@ -189,9 +236,20 @@
                  }
              }
  
 +            GL14.glBlendColor(1, 1, 1, 1);
 +            GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
 +            GlStateManager.disableBlend();
-+            fade = 1;
              GlStateManager.popMatrix();
          }
      }
 +	
 +	public float getFade() {
-+		return fade;
++		return lastfade;
 +	}
 +	
 +	public void setFade(float fade) {
@@ -93,7 +96,7 @@
  
      public static void renderEffect(TextureManager textureManagerIn, Runnable renderModelFunction, int scale)
      {
-@@ -304,6 +359,20 @@
+@@ -304,6 +362,20 @@
                      k = CustomColors.getColorFromItemStack(stack, bakedquad.getTintIndex(), k);
                  }
  
@@ -114,7 +117,7 @@
                  k = k | -16777216;
              }
  
-@@ -388,7 +457,7 @@
+@@ -388,7 +460,7 @@
              GlStateManager.enableRescaleNormal();
              GlStateManager.alphaFunc(516, 0.1F);
              GlStateManager.enableBlend();
@@ -123,7 +126,7 @@
              GlStateManager.pushMatrix();
  
              if (Config.isCustomItems())
-@@ -443,10 +512,15 @@
+@@ -443,10 +515,15 @@
          this.textureManager.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
          this.textureManager.getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
          GlStateManager.enableRescaleNormal();
@@ -140,7 +143,7 @@
          GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
  
          if (Config.isCustomItems())
-@@ -466,7 +540,7 @@
+@@ -466,7 +543,7 @@
          }
  
          this.renderItem(stack, bakedmodel);
@@ -149,7 +152,7 @@
          GlStateManager.disableRescaleNormal();
          GlStateManager.disableLighting();
          GlStateManager.popMatrix();
-@@ -644,4 +718,9 @@
+@@ -644,4 +721,9 @@
      {
          this.itemModelMesher.rebuildCache();
      }

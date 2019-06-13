@@ -135,6 +135,7 @@ public class VRButtonMapping implements Comparable<VRButtonMapping> {
 
 	@Override
 	public int compareTo(VRButtonMapping other) {
+		//System.out.println("keyBinding: " + (keyBinding != null ? keyBinding.getKeyDescription() : "null") + " other keyBinding: " + (other.keyBinding != null ? other.keyBinding.getKeyDescription() : "null") + " functionId: " + functionId + " other functionId: " + other.functionId);
 		if (keyBinding != null && other.keyBinding != null)
 			return keyBinding.compareTo(other.keyBinding);
 		if (isKeyboardBinding() && !other.isKeyboardBinding())

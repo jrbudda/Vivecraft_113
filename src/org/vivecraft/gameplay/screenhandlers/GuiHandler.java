@@ -7,11 +7,11 @@ import org.vivecraft.api.VRData.VRDevicePose;
 import org.vivecraft.control.VRButtonMapping;
 import org.vivecraft.provider.MCOpenVR;
 import org.vivecraft.utils.InputSimulator;
-import org.vivecraft.utils.OpenVRUtil;
 
 import de.fruitfly.ovr.structs.Matrix4f;
 import de.fruitfly.ovr.structs.Quatf;
 import de.fruitfly.ovr.structs.Vector3f;
+import jopenvr.OpenVRUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiEnchantment;
@@ -61,6 +61,10 @@ public class GuiHandler {
 	public static Vec3d guiPos_room = new Vec3d(0,0,0);
 	public static Matrix4f guiRotation_room = new Matrix4f();
 
+	public static float hudScale = 1.0f;
+	public static Vec3d hudPos_room = new Vec3d(0,0,0);
+	public static Matrix4f hudRotation_room = new Matrix4f();
+	
 	public static final KeyBinding keyMenuButton = new KeyBinding("GUI Menu Button", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
 	public static final KeyBinding keyLeftClick = new KeyBinding("GUI Left Click", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
 	public static final KeyBinding keyRightClick = new KeyBinding("GUI Right Click", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");

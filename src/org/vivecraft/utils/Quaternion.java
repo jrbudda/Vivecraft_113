@@ -5,6 +5,7 @@ import org.vivecraft.utils.lwjgl.Matrix4f;
 
 import de.fruitfly.ovr.structs.EulerOrient;
 import de.fruitfly.ovr.structs.Quatf;
+import jopenvr.OpenVRUtil;
 import net.minecraft.util.math.Vec3d;
 
 
