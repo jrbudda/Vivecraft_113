@@ -89,8 +89,8 @@ public class BezierCurve {
 
 		GlStateManager.disableTexture2D();
 		GlStateManager.disableLighting();
-		GlStateManager.depthMask(false);
-		//GlStateManager.disableCull();
+		GlStateManager.lineWidth(10);
+		GlStateManager.disableCull();
 
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferbuilder = tessellator.getBuffer();

@@ -296,30 +296,5 @@ public class PlayerModelController {
 				.crossProduct(quat.multiply(new Vec3d(0,1,0))).normalize();
 		return new Vec3d(0,1,0).crossProduct(facingPlaneNormal).normalize();
 	}
-	
-	
-	public static float getBodyYaw(RotInfo rotInfo){
 		
-		if(rotInfo.seated)
-			return rotInfo.headQuat.toEuler().getYaw();
-		
-		Vec3d leftCDir=getOrientVec(rotInfo.leftArmQuat);
-		Vec3d rightCDir=getOrientVec(rotInfo.rightArmQuat);
-		
-		Vec3d hmdDir=getOrientVec(rotInfo.headQuat);
-		
-		Vec3d dirVec=leftCDir.add(leftCDir).add(rightCDir).add(hmdDir);
-		
-		return (float)Math.toDegrees( Math.atan2(dirVec.x,dirVec.z));
-		
-		
-		/*Vec3d v = (c1.getPosition().subtract(c0.getPosition())).normalize().rotateYaw((float) (-Math.PI/2));
-		
-		if(Minecraft.getMinecraft().vrSettings.vrReverseHands)
-			return(float) Math.toDegrees(Math.atan2(v.x, -v.z));
-		else
-			return(float) Math.toDegrees(Math.atan2(-v.x, v.z));*/
-		
-	}
-	
 }

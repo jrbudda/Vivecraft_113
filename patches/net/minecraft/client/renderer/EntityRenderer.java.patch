@@ -1223,7 +1223,7 @@
      }
  
      public Minecraft getMinecraft()
-@@ -2288,4 +2759,2247 @@
+@@ -2288,4 +2759,2042 @@
      {
          return this.farPlaneDistance;
      }
@@ -1618,7 +1618,7 @@
 +	  		//END AWESOME MAIN MENU ENVIRONMENT
 +	
 +	  		GlStateManager.loadIdentity();
-+	  		Vec3d guipos = applyGUIModelView(this.mc.currentPass);
++	  		Vec3d guipos = GuiHandler.applyGUIModelView(this.mc.currentPass);
 +	
 +	  		GuiHandler.guiFramebuffer.bindFramebufferTexture();
 +	
@@ -2736,211 +2736,6 @@
 +  		}
 +  	}
 +        	
-+  	private Vec3d applyGUIModelView(RenderPass currentPass)
-+  	{
-+  		mc.profiler.startSection("applyGUIModelView");
-+
-+  		Vec3d eye =mc.vrPlayer.vrdata_world_render.getEye(currentPass).getPosition();
-+
-+  		if(mc.currentScreen != null && GuiHandler.guiPos_room == null){
-+  			//naughty mods!
-+  			GuiHandler.onGuiScreenChanged(null, mc.currentScreen, false);			
-+  		}
-+
-+  		Vec3d guipos = GuiHandler.guiPos_room;
-+  		de.fruitfly.ovr.structs.Matrix4f guirot = GuiHandler.guiRotation_room;
-+  		Vec3d guiLocal = new Vec3d(0, 0, 0);		
-+  		float scale = GuiHandler.guiScale;
-+
-+  		if(guipos == null){
-+  			guirot = null;
-+  			scale = 1;
-+  			if (mc.world!=null && (mc.currentScreen==null || mc.vrSettings.floatInventory == false))
-+  			{  // HUD view - attach to head or controller
-+  				int i = 1;
-+  				if (mc.vrSettings.vrReverseHands) i = -1;
-+
-+  				//					if(currentPass != renderPass.Third)
-+  				//						eye = mc.vrPlayer.getEyePos_World(currentPass); //dont need interpolation.
-+  				//					else {
-+  				//						mc.getMRTransform(false);
-+  				//						eye = mc.vrPlayer.vrdata_world_render.getEye(mc.currentPass).getPosition();
-+  				//					}
-+  				if (mc.vrSettings.seated || mc.vrSettings.vrHudLockMode == VRSettings.HUD_LOCK_HEAD)
-+  				{
-+  					de.fruitfly.ovr.structs.Matrix4f rot = de.fruitfly.ovr.structs.Matrix4f.rotationY((float)mc.vrPlayer.vrdata_world_render.rotation_radians);
-+  					de.fruitfly.ovr.structs.Matrix4f max = de.fruitfly.ovr.structs.Matrix4f.multiply(rot, MCOpenVR.hmdRotation);
-+
-+  					Vec3d v = mc.vrPlayer.vrdata_world_render.hmd.getPosition();
-+  					Vec3d d = mc.vrPlayer.vrdata_world_render.hmd.getDirection();
-+
-+  					if(mc.vrSettings.seated && mc.vrSettings.seatedHudAltMode){
-+  						d = mc.vrPlayer.vrdata_world_render.getController(0).getDirection();
-+  						max = de.fruitfly.ovr.structs.Matrix4f.multiply(rot, MCOpenVR.getAimRotation(0));
-+  					}
-+
-+  					guipos = new Vec3d((v.x + d.x*mc.vrPlayer.vrdata_world_render.worldScale*mc.vrSettings.hudDistance),
-+  							(v.y + d.y*mc.vrPlayer.vrdata_world_render.worldScale*mc.vrSettings.hudDistance),
-+  							(v.z + d.z*mc.vrPlayer.vrdata_world_render.worldScale*mc.vrSettings.hudDistance));
-+
-+
-+  					Quatf orientationQuat = OpenVRUtil.convertMatrix4ftoRotationQuat(max);
-+
-+  					guirot = new de.fruitfly.ovr.structs.Matrix4f(orientationQuat);
-+
-+  					//float pitchOffset = (float) Math.toRadians( -mc.vrSettings.hudPitchOffset );
-+  					//float yawOffset = (float) Math.toRadians( -mc.vrSettings.hudYawOffset );
-+  					//guiRotationPose = Matrix4f.multiply(guiRotationPose, OpenVRUtil.rotationXMatrix(yawOffset));
-+  					//guiRotationPose = Matrix4f.multiply(guiRotationPose, Matrix4f.rotationY(pitchOffset));
-+  					//guirot.M[3][3] = 1.0f;
-+
-+  					scale = mc.vrSettings.hudScale;
-+
-+  				}else if (mc.vrSettings.vrHudLockMode == VRSettings.HUD_LOCK_HAND)//hud on hand
-+  				{
-+  					de.fruitfly.ovr.structs.Matrix4f out = MCOpenVR.getAimRotation(1);
-+  					de.fruitfly.ovr.structs.Matrix4f rot = de.fruitfly.ovr.structs.Matrix4f.rotationY((float) mc.vrPlayer.vrdata_world_render.rotation_radians);
-+  					de.fruitfly.ovr.structs.Matrix4f MguiRotationPose =  de.fruitfly.ovr.structs.Matrix4f.multiply(rot,out);
-+  					//	MguiRotationPose.M[1][3] = 0.5f;
-+  					//guiRotationPose = mc.vrPlayer.getControllerMatrix_World(1);
-+  					guirot = de.fruitfly.ovr.structs.Matrix4f.multiply(MguiRotationPose, OpenVRUtil.rotationXMatrix((float) Math.PI * -0.2F));
-+  					guirot = de.fruitfly.ovr.structs.Matrix4f.multiply(guirot, de.fruitfly.ovr.structs.Matrix4f.rotationY((float) Math.PI * 0.1F * i));
-+  					scale = 1/1.7f;
-+  					//guirot.M[3][3] = 1.7f;
-+
-+  					guiLocal = new Vec3d(guiLocal.x, 0.5*mc.vrPlayer.vrdata_world_render.worldScale,guiLocal.z);
-+
-+  					guipos = getControllerRenderPos(1);
-+
-+  					MCOpenVR.hudPopup = true;
-+
-+  				}
-+  				else if (mc.vrSettings.vrHudLockMode == VRSettings.HUD_LOCK_WRIST)//hud on wrist
-+  				{
-+
-+  					de.fruitfly.ovr.structs.Matrix4f out = MCOpenVR.getAimRotation(1);
-+  					de.fruitfly.ovr.structs.Matrix4f rot = de.fruitfly.ovr.structs.Matrix4f.rotationY((float) mc.vrPlayer.vrdata_world_render.rotation_radians);
-+  					guirot =  de.fruitfly.ovr.structs.Matrix4f.multiply(rot,out);
-+
-+                    guirot = de.fruitfly.ovr.structs.Matrix4f.multiply(guirot, OpenVRUtil.rotationZMatrix((float)Math.PI * 0.5f * i));
-+  					guirot = de.fruitfly.ovr.structs.Matrix4f.multiply(guirot, de.fruitfly.ovr.structs.Matrix4f.rotationY((float) Math.PI * 0.3f *i));
-+
-+                    guipos = getControllerRenderPos(1);
-+
-+  					/*de.fruitfly.ovr.structs.Vector3f forward = new de.fruitfly.ovr.structs.Vector3f(0,0,1);
-+  					de.fruitfly.ovr.structs.Vector3f guiNormal = guirot.transform(forward);
-+
-+  					Vec3d facev = mc.vrPlayer.vrdata_world_render.hmd.getDirection();
-+  					de.fruitfly.ovr.structs.Vector3f face = new de.fruitfly.ovr.structs.Vector3f((float)facev.x, (float)facev.y, (float)facev.z);
-+
-+                    float dot = face.dot(guiNormal);
-+
-+  					Vec3d head = mc.vrPlayer.vrdata_world_render.hmd.getPosition();
-+
-+  					de.fruitfly.ovr.structs.Vector3f headv = new de.fruitfly.ovr.structs.Vector3f((float)guipos.x, (float)guipos.y, (float)guipos.z).subtract(new de.fruitfly.ovr.structs.Vector3f((float)head.x, (float)head.y, (float)head.z)).normalised();
-+  					if(headv == null) return guipos;
-+  					float dot2 = (float) headv.dot(guiNormal);
-+
-+  					if(MCOpenVR.hudPopup){
-+  						MCOpenVR.hudPopup = Math.abs(dot2) > 0.7 &&  dot < -0.8;
-+  					}else {
-+  						MCOpenVR.hudPopup = Math.abs(dot2) > 0.9 &&  dot < -0.97;
-+  					}*/
-+
-+                    MCOpenVR.hudPopup = true;
-+
-+                    boolean slim = mc.player.getSkinType().equals("slim");
-+
-+  					/*if(MCOpenVR.hudPopup){
-+  						scale = .5f;
-+  						guiLocal = new Vec3d(
-+  								-0.005*mc.vrPlayer.vrdata_world_render.worldScale,
-+  								0.16*mc.vrPlayer.vrdata_world_render.worldScale,
-+  								0.19*mc.vrPlayer.vrdata_world_render.worldScale);
-+  					}else {*/
-+  						scale = 0.4f;
-+  						guiLocal = new Vec3d(
-+  								i*-0.136f*mc.vrPlayer.vrdata_world_render.worldScale,
-+								(slim ? 0.135 : 0.125)*mc.vrPlayer.vrdata_world_render.worldScale,
-+                                0.06*mc.vrPlayer.vrdata_world_render.worldScale);
-+  						guirot = de.fruitfly.ovr.structs.Matrix4f.multiply(guirot, de.fruitfly.ovr.structs.Matrix4f.rotationY((float) Math.PI * 0.2f*i ));
-+  					//}
-+  				}
-+  			} 
-+  		} else {
-+  			//convert previously calculated coords to world coords
-+  			guipos = mc.vrPlayer.room_to_world_pos(guipos, mc.vrPlayer.vrdata_world_render);
-+  			de.fruitfly.ovr.structs.Matrix4f rot = de.fruitfly.ovr.structs.Matrix4f.rotationY(mc.vrPlayer.vrdata_world_render.rotation_radians);
-+  			guirot = de.fruitfly.ovr.structs.Matrix4f.multiply(rot, guirot);
-+  		}
-+
-+
-+  		// otherwise, looking at inventory screen. use pose calculated when screen was opened
-+  		//where is this set up... should be here....
-+
-+  		if ((mc.vrSettings.seated || mc.vrSettings.menuAlwaysFollowFace) && mc.entityRenderer.isInMenuRoom()){ //|| mc.vrSettings.vrHudLockMode == VRSettings.HUD_LOCK_BODY) {
-+
-+  			//main menu slow yaw tracking thing
-+  			scale = 2;
-+
-+  			Vec3d posAvg = new Vec3d(0, 0, 0);
-+  			for (Vec3d vec : mc.hmdPosSamples) {
-+  				posAvg = new Vec3d(posAvg.x + vec.x, posAvg.y + vec.y, posAvg.z + vec.z);
-+  			}
-+  			posAvg = new Vec3d(posAvg.x / mc.hmdPosSamples.size(), posAvg.y / mc.hmdPosSamples.size(), posAvg.z / mc.hmdPosSamples.size());
-+
-+  			float yawAvg = 0;
-+  			for (float f : mc.hmdYawSamples) {
-+  				yawAvg += f;
-+  			}
-+  			yawAvg /= mc.hmdYawSamples.size();
-+  			yawAvg = (float)Math.toRadians(yawAvg);
-+
-+  			Vec3d dir = new Vec3d(-Math.sin(yawAvg), 0, Math.cos(yawAvg));
-+  			float dist = mc.entityRenderer.isInMenuRoom() ? 2.5F*mc.vrPlayer.vrdata_world_render.worldScale: mc.vrSettings.hudDistance;
-+  			Vec3d pos = posAvg.add(new Vec3d(dir.x * dist, dir.y * dist, dir.z * dist));
-+  			Vec3d gpr = new Vec3d(pos.x, pos.y, pos.z);
-+
-+  			de.fruitfly.ovr.structs.Matrix4f gr = de.fruitfly.ovr.structs.Matrix4f.rotationY(135-yawAvg); // don't ask
-+
-+  			guirot = de.fruitfly.ovr.structs.Matrix4f.multiply(gr, de.fruitfly.ovr.structs.Matrix4f.rotationY(mc.vrPlayer.vrdata_world_render.rotation_radians));
-+  			guipos = mc.vrPlayer.room_to_world_pos(gpr, mc.vrPlayer.vrdata_world_render);
-+
-+  			//for mouse control
-+  			GuiHandler.guiRotation_room = gr;
-+  			GuiHandler.guiScale=2;
-+  			GuiHandler.guiPos_room = gpr;
-+  			//
-+  		}
-+
-+  		// counter head rotation
-+  		if (currentPass != RenderPass.THIRD) {
-+  			GL11.glMultMatrixf(mc.vrPlayer.vrdata_world_render.hmd.getMatrix().toFloatBuffer());
-+  		} else {
-+  			applyMRCameraRotation(false);			
-+  		}
-+
-+
-+  		GL11.glTranslatef((float) (guipos.x - eye.x), (float)(guipos.y - eye.y), (float)(guipos.z - eye.z));
-+  		//  		
-+  		//  			// offset from eye to gui pos
-+  		GL11.glMultMatrixf(guirot.transposed().toFloatBuffer());
-+  		GL11.glTranslatef((float)guiLocal.x, (float) guiLocal.y, (float)guiLocal.z);
-+
-+  		float thescale = scale * mc.vrPlayer.vrdata_world_render.worldScale; // * this.mc.vroptions.hudscale
-+  		GlStateManager.scalef(thescale, thescale, thescale);
-+  		GuiHandler.guiScaleApplied = thescale;
-+  		//double timeOpen = getCurrentTimeSecs() - startedOpeningInventory;
-+
-+
-+  		//		if (timeOpen < 1.5) {
-+  		//			scale = (float)(Math.sin(Math.PI*0.5*timeOpen/1.5));
-+  		//		}
-+
-+  		mc.profiler.endSection();
-+
-+  		return guipos;
-+  	}
 +
 +	private Vec3d apply2DModelView(RenderPass currentPass, Vec3d guipos, de.fruitfly.ovr.structs.Matrix4f guirot) {
 +		mc.profiler.startSection("applyKeyboardModelView");

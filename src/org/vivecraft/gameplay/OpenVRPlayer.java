@@ -351,7 +351,7 @@ public class OpenVRPlayer
 				if (el.canBeSteered()){
 					el.renderYawOffset = vrdata_world_pre.getBodyYaw();
 				}
-			}
+			}		
 		}
 
 		mc.profiler.endSection();

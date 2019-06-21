@@ -1643,7 +1643,7 @@ public class VRSettings
             var5.println("mrMovingCamOffsetZ:" + this.mrMovingCamOffsetZ);
             var5.println("mrMovingCamOffsetRotW:" + this.mrMovingCamOffsetRotQuat.w);
             var5.println("mrMovingCamOffsetRotX:" + this.mrMovingCamOffsetRotQuat.x);
-            var5.println("mrMovingCamOffsetrotY:" + this.mrMovingCamOffsetRotQuat.y);
+            var5.println("mrMovingCamOffsetRotY:" + this.mrMovingCamOffsetRotQuat.y);
             var5.println("mrMovingCamOffsetRotZ:" + this.mrMovingCamOffsetRotQuat.z);
             var5.println("vrTouchHotbar:" + this.vrTouchHotbar);
             var5.println("seatedhmd:" + this.seatedUseHMD);
