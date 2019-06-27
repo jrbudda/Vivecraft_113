@@ -30,10 +30,11 @@
          OptionSpec<Integer> optionspec15 = optionparser.accepts("fullscreenWidth").withRequiredArg().<Integer>ofType(Integer.class);
          OptionSpec<Integer> optionspec16 = optionparser.accepts("fullscreenHeight").withRequiredArg().<Integer>ofType(Integer.class);
          OptionSpec<String> optionspec17 = optionparser.accepts("userProperties").withRequiredArg().defaultsTo("{}");
-@@ -102,6 +107,14 @@
+@@ -102,6 +107,16 @@
          Optional<Integer> optional1 = Optional.<Integer>ofNullable(func_206236_a(optionset, optionspec16));
          boolean flag = optionset.has("fullscreen");
          boolean flag1 = optionset.has("demo");
++        //Vivecraft
 +        kiosk = optionset.has("kiosk");
 +    	if(kiosk) System.out.println("Setting kiosk");
 +        if (kiosk) {
@@ -42,10 +43,11 @@
 +        		System.out.println("Setting viewonly");
 +        }
 +        katvr = optionset.has("katvr");
++        //
          String s3 = (String)func_206236_a(optionset, optionspec12);
          Gson gson = (new GsonBuilder()).registerTypeAdapter(PropertyMap.class, new Serializer()).create();
          PropertyMap propertymap = (PropertyMap)JsonUtils.fromJson(gson, (String)func_206236_a(optionset, optionspec17), PropertyMap.class);
-@@ -162,6 +175,7 @@
+@@ -162,6 +177,7 @@
  
      static
      {

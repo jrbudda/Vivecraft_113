@@ -585,7 +585,7 @@ public class GuiHandler {
   					scale = 1/1.7f;
   					//guirot.M[3][3] = 1.7f;
 
-  					guiLocal = new Vec3d(guiLocal.x, 0.5*mc.vrPlayer.vrdata_world_render.worldScale,guiLocal.z);
+  					guiLocal = new Vec3d(guiLocal.x, 0.32*mc.vrPlayer.vrdata_world_render.worldScale,guiLocal.z);
 
   					guipos = mc.entityRenderer.getControllerRenderPos(1);
 

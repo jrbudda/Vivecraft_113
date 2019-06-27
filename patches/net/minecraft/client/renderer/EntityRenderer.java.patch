@@ -1223,7 +1223,7 @@
      }
  
      public Minecraft getMinecraft()
-@@ -2288,4 +2759,2042 @@
+@@ -2288,4 +2759,2043 @@
      {
          return this.farPlaneDistance;
      }
@@ -1575,6 +1575,7 @@
 +  		if(mc.bowTracker.isDrawing) return;
 +
 +  		if(mc.currentScreen ==null && mc.gameSettings.hideGUI) return;
++    	if(RadialHandler.isShowing()) return;
 +
 +  		boolean inMenuRoom = this.isInMenuRoom();
 +  		// Pass matrici on to OpenGL...

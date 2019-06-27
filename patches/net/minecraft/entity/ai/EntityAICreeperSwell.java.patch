@@ -29,7 +29,7 @@
 +        if (entitylivingbase != null){
 +        	VivePlayer vp = NetworkHelper.vivePlayers.get(entitylivingbase.getUniqueID());
 +        	if (vp != null && vp.isVR())
-+        		radius = 3.0f;
++        		radius = creeperBlowyUppyRadius*creeperBlowyUppyRadius;
 +        }
 +		//
 +        return this.swellingCreeper.getCreeperState() > 0 || entitylivingbase != null && this.swellingCreeper.getDistanceSq(entitylivingbase) < radius;

@@ -986,7 +986,7 @@
 +    	if(pos.z - Math.floor(pos.z) > 1-buffer){
 +    		per = 1f - (float) (pos.z - Math.floor(pos.z));
 +    		mc.entityRenderer.inBlock = (buffer - per) / buffer; 
-+    		if (mc.world.getBlockState(bp.north()).causesSuffocation()) return true;
++    		if (mc.world.getBlockState(bp.south()).causesSuffocation()) return true;
 +    	}
 +
 +    	return false;

@@ -21,11 +21,12 @@
      }
  
      /**
-@@ -96,7 +103,7 @@
+@@ -96,7 +103,8 @@
      {
          ItemStack itemstack = playerIn.getHeldItem(handIn);
  
 -        if (playerIn.canEat(this.alwaysEdible))
++        //VIVECRAFT
 +        if (playerIn.canEat(this.alwaysEdible) || itemstack.getDisplayName().getString().equals("EAT ME"))
          {
              playerIn.setActiveHand(handIn);

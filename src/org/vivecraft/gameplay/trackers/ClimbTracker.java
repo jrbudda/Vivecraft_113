@@ -239,16 +239,16 @@ public class ClimbTracker extends Tracker{
 						//						if (bs.get(BlockVine.UP) && mc.world.getBlockState(bp.up()).isFullCube())
 						//							bbs.add(upBB);
 
-						if (bs.get(BlockVine.NORTH) && mc.world.getBlockState(bp.north()).isFullCube())
+						if (bs.get(BlockVine.NORTH) && mc.world.getBlockState(bp.north()).isSolid())
 							bbs.add(southBB);
 
-						if (bs.get(BlockVine.EAST) && mc.world.getBlockState(bp.east()).isFullCube())
+						if (bs.get(BlockVine.EAST) && mc.world.getBlockState(bp.east()).isSolid())
 							bbs.add(westBB);
 
-						if (bs.get(BlockVine.SOUTH) && mc.world.getBlockState(bp.south()).isFullCube())
+						if (bs.get(BlockVine.SOUTH) && mc.world.getBlockState(bp.south()).isSolid())
 							bbs.add(northbb);
 
-						if (bs.get(BlockVine.WEST) && mc.world.getBlockState(bp.west()).isFullCube())
+						if (bs.get(BlockVine.WEST) && mc.world.getBlockState(bp.west()).isSolid())
 							bbs.add(eastBB);
 					}
 					

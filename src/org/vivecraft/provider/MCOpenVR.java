@@ -1,7 +1,9 @@
 package org.vivecraft.provider;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.nio.IntBuffer;
@@ -34,6 +36,7 @@ import org.vivecraft.utils.Vector2;
 import org.vivecraft.utils.jkatvr;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.gson.Gson;
 import com.sun.jna.Memory;
 import com.sun.jna.NativeLibrary;
 import com.sun.jna.Pointer;
@@ -60,6 +63,7 @@ import jopenvr.VREvent_t;
 import jopenvr.VRTextureBounds_t;
 import jopenvr.VRTextureDepthInfo_t;
 import jopenvr.VRTextureWithDepth_t;
+import jopenvr.VR_IVRApplications_FnTable;
 import jopenvr.VR_IVRChaperone_FnTable;
 import jopenvr.VR_IVRCompositor_FnTable;
 import jopenvr.VR_IVROCSystem_FnTable;
@@ -96,14 +100,13 @@ public class MCOpenVR
 	static VR_IVRRenderModels_FnTable vrRenderModels;
 	static VR_IVRChaperone_FnTable vrChaperone;
 	public static VR_IVROCSystem_FnTable vrOpenComposite;
+	static VR_IVRApplications_FnTable vrApplications;
 
 	private static IntByReference hmdErrorStore = new IntByReference();
 	private static IntBuffer hmdErrorStoreBuf;
 
 	private static TrackedDevicePose_t.ByReference hmdTrackedDevicePoseReference;
 	private static TrackedDevicePose_t[] hmdTrackedDevicePoses;
-	private static TrackedDevicePose_t.ByReference hmdGamePoseReference;
-	private static TrackedDevicePose_t[] hmdGamePoses;
 
 	private static Matrix4f[] poseMatrices;
 	private static Vec3d[] deviceVelocity;
@@ -295,6 +298,7 @@ public class MCOpenVR
 			initOpenVRSettings();
 			initOpenVRRenderModels();
 			initOpenVRChaperone();
+			initOpenVRApplications();
 			initOpenComposite();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -302,6 +306,8 @@ public class MCOpenVR
 			initStatus = e.getLocalizedMessage();
 			return false;
 		}
+
+		installApplicationManifest();
 
 		System.out.println( "OpenVR initialized & VR connected." );
 
@@ -403,7 +409,57 @@ public class MCOpenVR
 		return keyBindings;
 	}
 
-	private static void initializeJOpenVR() throws Exception { 
+	private static void installApplicationManifest() {
+		File file = new File("openvr/vivecraft.vrmanifest");
+		Utils.loadAssetToFile("vivecraft.vrmanifest", file, true);
+
+		File customFile = new File("openvr/custom.vrmanifest");
+		if (customFile.exists())
+			file = customFile;
+
+		if (vrApplications != null) {
+			String appKey;
+			try {
+				Map map = new Gson().fromJson(new FileReader(file), Map.class);
+				appKey = ((Map)((List)map.get("applications")).get(0)).get("app_key").toString();
+			} catch (Exception e) {
+				System.out.println("Error reading appkey from manifest");
+				e.printStackTrace();
+				return;
+			}
+
+			// 1 = Temporary manifest so we don't stick around in the game library.
+			// SteamVR Input will still persist our bindings.
+			int error = vrApplications.AddApplicationManifest.apply(ptrFomrString(file.getAbsolutePath()), (byte)1);
+			if (error != 0) {
+				System.out.println("Failed to add application manifest: " + vrApplications.GetApplicationsErrorNameFromEnum.apply(error).getString(0));
+			} else {
+				System.out.println("Application manifest added successfully");
+
+				// OpenVR doc says pid = 0 will use the calling process, but it actually doesn't, so we
+				// have to use this dumb hack that *probably* works on all relevant platforms.
+				// TODO: When Minecraft one day requires Java 9+, we can use ProcessHandle.current().pid()
+				int pid;
+				try {
+					String runtimeName = ManagementFactory.getRuntimeMXBean().getName();
+					pid = Integer.parseInt(runtimeName.split("@")[0]);
+				} catch (Exception e) {
+					System.out.println("Error getting process id");
+					e.printStackTrace();
+					return;
+				}
+
+				error = vrApplications.IdentifyApplication.apply(pid, ptrFomrString(appKey));
+				if (error != 0) {
+					System.out.println("Failed to identify application: " + vrApplications.GetApplicationsErrorNameFromEnum.apply(error).getString(0));
+				} else {
+					System.out.println("Application identified successfully");
+				}
+			}
+		}
+	}
+
+	private static void initializeJOpenVR() {
 		hmdErrorStoreBuf = IntBuffer.allocate(1);
 		vrsystem = null;
 		JOpenVRLibrary.VR_InitInternal(hmdErrorStoreBuf, JOpenVRLibrary.EVRApplicationType.EVRApplicationType_VRApplication_Scene);
@@ -414,7 +470,7 @@ public class MCOpenVR
 		}
 
 		if( vrsystem == null || isError()) {
-			throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));		
+			throw new RuntimeException(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
 		} else {
 
 			vrsystem.setAutoSynch(false);
@@ -484,8 +540,19 @@ public class MCOpenVR
 
 	}
 
+	static void initOpenVRApplications() {
+		vrApplications = new VR_IVRApplications_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRApplications_Version, hmdErrorStoreBuf));
+		if (!isError()) {
+			vrApplications.setAutoSynch(false);
+			vrApplications.read();
+			System.out.println("OpenVR Applications initialized OK");
+		} else {
+			System.out.println("VRApplications init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+			vrApplications = null;
+		}
+	}
 
-	public static void initOpenVRSettings() throws Exception
+	public static void initOpenVRSettings()
 	{
 		vrSettings = new VR_IVRSettings_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRSettings_Version, hmdErrorStoreBuf));
 		if (!isError()) {
@@ -493,17 +560,13 @@ public class MCOpenVR
 			vrSettings.read();					
 			System.out.println("OpenVR Settings initialized OK");
 		} else {
-			if (getError() != 0) {
-				System.out.println("VRSettings init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
-				vrSettings = null;
-			} else {
-				throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
-			}	
+			System.out.println("VRSettings init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+			vrSettings = null;
 		}
 	}
 
 
-	public static void initOpenVRRenderModels() throws Exception
+	public static void initOpenVRRenderModels()
 	{
 		vrRenderModels = new VR_IVRRenderModels_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRRenderModels_Version, hmdErrorStoreBuf));
 		if (!isError()) {
@@ -511,32 +574,24 @@ public class MCOpenVR
 			vrRenderModels.read();			
 			System.out.println("OpenVR RenderModels initialized OK");
 		} else {
-			if (getError() != 0) {
-				System.out.println("VRRenderModels init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
-				vrRenderModels = null;
-			} else {
-				throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
-			}
+			System.out.println("VRRenderModels init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+			vrRenderModels = null;
 		}
 	}
 
-	private static void initOpenVRChaperone() throws Exception {
+	private static void initOpenVRChaperone() {
 		vrChaperone = new VR_IVRChaperone_FnTable(JOpenVRLibrary.VR_GetGenericInterface(JOpenVRLibrary.IVRChaperone_Version, hmdErrorStoreBuf));
 		if (!isError()) {
 			vrChaperone.setAutoSynch(false);
 			vrChaperone.read();
 			System.out.println("OpenVR chaperone initialized.");
 		} else {
-			if (getError() != 0) {
-				System.out.println("VRChaperone init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
-				vrChaperone = null;
-			} else {
-				throw new Exception(jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
-			}
+			System.out.println("VRChaperone init failed: " + jopenvr.JOpenVRLibrary.VR_GetVRInitErrorAsEnglishDescription(getError()).getString(0));
+			vrChaperone = null;
 		}
 	}
 
-	private static void initOpenComposite() throws Exception {
+	private static void initOpenComposite() {
 		vrOpenComposite = new VR_IVROCSystem_FnTable(JOpenVRLibrary.VR_GetGenericInterface(VR_IVROCSystem_FnTable.Version, hmdErrorStoreBuf));
 		if (!isError()) {
 			vrOpenComposite.setAutoSynch(false);
