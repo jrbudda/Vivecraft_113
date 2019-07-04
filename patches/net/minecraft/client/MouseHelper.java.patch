@@ -9,6 +9,15 @@
      {
          if (handle == this.minecraft.mainWindow.getHandle())
          {
+@@ -155,7 +155,7 @@
+ 
+                 if (flag)
+                 {
+-                    if (this.minecraft.player.isSpectator() && button == 2)
++                    if (this.minecraft.player != null && this.minecraft.player.isSpectator() && button == 2)
+                     {
+                         this.minecraft.ingameGUI.getSpectatorGui().onMiddleClick();
+                     }
 @@ -177,7 +177,7 @@
       * @param xoffset the scroll offset along the x-axis
       * @param yoffset the scroll offset along the y-axis

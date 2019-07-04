@@ -351,10 +351,10 @@ public class OpenVRStereoRenderer
 			
 			// Setup ortho projection
 			GL11.glMatrixMode(GL11.GL_PROJECTION);
-			GL11.glPushMatrix();
+			GlStateManager.pushMatrix();
 				GL11.glLoadIdentity();
 				GL11.glMatrixMode(GL11.GL_MODELVIEW);
-				GL11.glPushMatrix();
+				GlStateManager.pushMatrix();
 					GL11.glLoadIdentity();
 
 					GL11.glTranslatef(0.0f, 0.0f, -.7f);
@@ -438,9 +438,9 @@ public class OpenVRStereoRenderer
 					GlStateManager.enableBlend();
 
 					GL11.glMatrixMode(GL11.GL_PROJECTION);
-					GL11.glPopMatrix();		
+					GlStateManager.popMatrix();		
 				GL11.glMatrixMode(GL11.GL_MODELVIEW);
-				GL11.glPopMatrix();
+				GlStateManager.popMatrix();
 		}
 	}
 

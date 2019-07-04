@@ -232,7 +232,7 @@
          GL11.glTexCoord2f(0.0F, 0.0F);
          GL11.glVertex3f(0.0F, 0.0F, 0.0F);
 @@ -4640,7 +4671,7 @@
-             GL11.glPushMatrix();
+             GlStateManager.pushMatrix();
              GL11.glLoadIdentity();
              GL11.glOrtho(0.0D, 1.0D, 0.0D, 1.0D, 0.0D, 1.0D);
 -            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);

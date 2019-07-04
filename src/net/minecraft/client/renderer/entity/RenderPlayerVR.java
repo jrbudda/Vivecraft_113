@@ -121,15 +121,16 @@ public class RenderPlayerVR extends RenderLivingBase<AbstractClientPlayer>
                 modelplayer.leftArmPose = modelbiped$armpose;
             }
         }
-		if(clientPlayer.isUser()){
-			modelplayer.bipedHead.showModel=false;
-			modelplayer.vrHMD.showModel=false;
-			modelplayer.bipedLeftArm.showModel=false;
-			modelplayer.bipedRightArm.showModel=false;
-			modelplayer.bipedLeftArmwear.showModel=false;
-			modelplayer.bipedRightArmwear.showModel=false;
-			modelplayer.bipedHeadwear.showModel=false;
-		}
+        
+//		if(clientPlayer.isUser()){
+//			modelplayer.bipedHead.showModel=false;
+//			modelplayer.vrHMD.showModel=false;
+//			modelplayer.bipedLeftArm.showModel=false;
+//			modelplayer.bipedRightArm.showModel=false;
+//			modelplayer.bipedLeftArmwear.showModel=false;
+//			modelplayer.bipedRightArmwear.showModel=false;
+//			modelplayer.bipedHeadwear.showModel=false;
+//		}
     }
 
     /**

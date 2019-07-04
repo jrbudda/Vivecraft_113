@@ -447,9 +447,9 @@
 +			Shaders.beginHand(false);
 +		}else {
 +			GL11.glMatrixMode(GL11.GL_PROJECTION);
-+			GL11.glPushMatrix();
++			GlStateManager.pushMatrix();
 +			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+			GL11.glPushMatrix();
++			GlStateManager.pushMatrix();
 +		}	
 +			//from player face to HMD
 +			setupCameraTransform(partialTicks);
@@ -491,9 +491,9 @@
 +			Shaders.endHand();
 +		else {
 +			GL11.glMatrixMode(GL11.GL_PROJECTION);
-+			GL11.glPopMatrix();
++			GlStateManager.popMatrix();
 +			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+			GL11.glPopMatrix();
++			GlStateManager.popMatrix();
 +		}	
 +	}
  
@@ -654,12 +654,6 @@
 -            if (flag && !((EntityPlayer)entity).capabilities.allowEdit)
 -            {
 -                ItemStack itemstack = ((EntityPlayer)entity).getHeldItemMainhand();
--
--                if (this.mc.objectMouseOver != null && this.mc.objectMouseOver.type == RayTraceResult.Type.BLOCK)
--                {
--                    BlockPos blockpos = this.mc.objectMouseOver.getBlockPos();
--                    IBlockState iblockstate = this.mc.world.getBlockState(blockpos);
--                    Block block = iblockstate.getBlock();
 +    	if (!this.drawBlockOutline || 
 +    			(mc.gameSettings.hideGUI && mc.vrSettings.renderBlockOutlineMode == VRSettings.RENDER_BLOCK_OUTLINE_MODE_HUD) ||
 +    			mc.vrSettings.renderBlockOutlineMode == VRSettings.RENDER_BLOCK_OUTLINE_MODE_NEVER ||
@@ -694,6 +688,12 @@
 +    			}
 +    		}
  
+-                if (this.mc.objectMouseOver != null && this.mc.objectMouseOver.type == RayTraceResult.Type.BLOCK)
+-                {
+-                    BlockPos blockpos = this.mc.objectMouseOver.getBlockPos();
+-                    IBlockState iblockstate = this.mc.world.getBlockState(blockpos);
+-                    Block block = iblockstate.getBlock();
+-
 -                    if (this.mc.playerController.getCurrentGameType() == GameType.SPECTATOR)
 -                    {
 -                        flag = ReflectorForge.blockHasTileEntity(iblockstate) && this.mc.world.getTileEntity(blockpos) instanceof IInventory;
@@ -940,7 +940,7 @@
 +        			//Shaders.isItemToRenderOffTranslucent() || mc.getItemRenderer().getFade() < 1;
  
 +        if (shouldRenderHands())
-+            renderVRHands(correctTranslucentGui, partialTicks);
++            renderVRHands(!correctTranslucentGui, partialTicks);
 +
 +        if(!correctTranslucentGui) {
 +            if (flag)
@@ -1057,8 +1057,8 @@
 +            // Put back the eye stencil
 +            this.drawEyeStencil();
 +        }
-+    }
-+
+     }
+ 
 +    private void renderVRHands(boolean translucent, float partialTicks) {
 +        this.mc.profiler.startSection("hands");
 +
@@ -1083,7 +1083,7 @@
 +        GlStateManager.enableTexture2D();
 +
 +        this.mc.profiler.endSection();
-     }
++    }
 +    
 +    void renderVRGuiElements(boolean drawToStencil, float partialTicks) {
 +        this.mc.profiler.startSection("hud");
@@ -1115,7 +1115,7 @@
 +            GlStateManager.enableLighting();
 +            GlStateManager.colorMask(true, true, true, true);
 +        }
- 
++
 +        if (drawToStencil) {
 +            GL11.glStencilFunc(GL11.GL_EQUAL, 0xFF, 1);
 +            GL11.glStencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
@@ -1223,7 +1223,7 @@
      }
  
      public Minecraft getMinecraft()
-@@ -2288,4 +2759,2043 @@
+@@ -2288,4 +2759,2044 @@
      {
          return this.farPlaneDistance;
      }
@@ -1363,7 +1363,7 @@
 +  		GlStateManager.disableLighting();
 +  		
 +  		GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  		GL11.glPushMatrix();
++  		GlStateManager.pushMatrix();
 +  		GL11.glLoadIdentity();
 +
 +  		// when laying out a 2D view, sometimes "top-left is the origin" makes more sense.
@@ -1371,7 +1371,7 @@
 +  		GL11.glOrtho(0, this.mc.mainWindow.getFramebufferWidth(), this.mc.mainWindow.getFramebufferHeight(), 0, -1, 1);
 +
 +  		GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  		GL11.glPushMatrix();
++  		GlStateManager.pushMatrix();
 +  			GL11.glLoadIdentity();
 +  	
 +  			GlStateManager.color4f(r, g, b, fadeAlpha);
@@ -1386,10 +1386,10 @@
 +  			GL11.glEnd();
 +  	
 +  			GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  			GL11.glPopMatrix();
++  			GlStateManager.popMatrix();
 +  	
 +  			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  		GL11.glPopMatrix();
++  		GlStateManager.popMatrix();
 +  		
 +  		GlStateManager.enableDepthTest();
 +  		GlStateManager.enableTexture2D();
@@ -1435,7 +1435,7 @@
 +  	
 +  			GL11.glMatrixMode(GL11.GL_MODELVIEW);
 +            // VIVE START - custom GUI position
-+            GL11.glPushMatrix();
++            GlStateManager.pushMatrix();
 +  			GL11.glLoadIdentity();
 +  				applyMenuRoomModelView(this.mc.currentPass);
 +  						
@@ -1522,7 +1522,7 @@
 +
 +  	
 +  			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  			GL11.glPopMatrix();
++  			GlStateManager.popMatrix();
 +  	}
 +
 +  	void renderPhysicalKeyboard() {
@@ -1604,7 +1604,7 @@
 +  		}
 +
 +  		GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+        GL11.glPushMatrix();
++        GlStateManager.pushMatrix();
 +	  		GL11.glLoadIdentity();
 +	  		applyMenuRoomModelView(this.mc.currentPass);
 +	
@@ -1705,7 +1705,7 @@
 +	  		GlStateManager.enableCull();
 +	
 +	  		GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  		GL11.glPopMatrix();
++  		GlStateManager.popMatrix();
 +
 +  	}
 +
@@ -2043,12 +2043,12 @@
 +  		}
 +  		else {
 +  			GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  			GL11.glPushMatrix();
++  			GlStateManager.pushMatrix();
 +  			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  			GL11.glPushMatrix();
++  			GlStateManager.pushMatrix();
 +  		}
 +  			
-+  			GL11.glPushMatrix();
++  			GlStateManager.pushMatrix();
 +
 +  				SetupRenderingAtController(1);	//does not push
 +  				
@@ -2078,10 +2078,9 @@
 +  					else //just hand
 +  						itemRenderer.renderItemInFirstPerson(mc.player, partialTicks, 0, EnumHand.OFF_HAND, mc.player.getSwingProgress(partialTicks), item, 0);
 +  			    GlStateManager.disableRescaleNormal();
-+  		
++  		 					
++  			GlStateManager.popMatrix();//back to hmd rendering
 +
-+  			GL11.glPopMatrix();//back to hmd rendering
-+  					
 +  		if (renderTeleport) {
 +  			//setupPolyRendering(true);
 +
@@ -2096,7 +2095,7 @@
 +
 +  					//	TP energy
 +  				if (mc.vrSettings.vrLimitedSurvivalTeleport && !mc.vrPlayer.getFreeMove() && mc.playerController.isNotCreative() && mc.teleportTracker.vrMovementStyle.arcAiming && !mc.bowTracker.isActive(mc.player)){
-+  					GL11.glPushMatrix();
++  					GlStateManager.pushMatrix();
 +  						SetupRenderingAtController(1);	//does not push
 +
 +  						Vec3d start = new Vec3d(0,0.005,.03);
@@ -2117,18 +2116,19 @@
 +  						renderFlatQuad(start.add(0, .05001, 0), r,r,0, tpLimitedColor.getX(), tpLimitedColor.getY(), tpLimitedColor.getZ(), 128);
 +  						renderFlatQuad(start.add(0, .05, 0), max,max,0, tpLimitedColor.getX(), tpLimitedColor.getY(), tpLimitedColor.getZ(), 50);
 +
-+  					GL11.glPopMatrix();
++  					GlStateManager.popMatrix();
 +  				}
 +
++
 +  				if(!mc.vrPlayer.getFreeMove()){ //actually rendered from the head, not hand.
-+  					GL11.glPushMatrix();
++  					GlStateManager.pushMatrix();
 +  					GlStateManager.enableDepthTest();
 +  						if(mc.teleportTracker.vrMovementStyle.arcAiming) {
 +  							renderTeleportArc(mc.vrPlayer);
 +  						} else {
 +  							//renderTeleportLine(mc.vrPlayer);
 +  						}
-+  					GL11.glPopMatrix();
++  					GlStateManager.popMatrix();
 +  				}
 +
 +  			//setupPolyRendering(false);
@@ -2141,16 +2141,16 @@
 +  			Shaders.endHand();
 +  		else {
 +  			GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  			GL11.glPopMatrix();
++  			GlStateManager.popMatrix();
 +  			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  			GL11.glPopMatrix();
++  			GlStateManager.popMatrix();
 +  		}	
 +  	}
 +
 +  	private void renderMainMenuHands()
 +  	{
 +  		GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  		GL11.glPushMatrix();
++  		GlStateManager.pushMatrix();
 +  			GL11.glLoadIdentity();
 +  			if (mc.currentPass != RenderPass.THIRD && mc.currentPass != RenderPass.CENTER)
 +  			{
@@ -2165,7 +2165,7 @@
 +  				}
 +  			}
 +  			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  			GL11.glPushMatrix();
++  			GlStateManager.pushMatrix();
 +  				GL11.glLoadIdentity();
 +  		
 +  				GlStateManager.disableTexture2D();
@@ -2196,7 +2196,7 @@
 +  					Vec3d controllerPos = mc.vrPlayer.vrdata_world_render.getEye(mc.currentPass).getPosition()
 +  							.subtract(getControllerRenderPos(c));
 +  					
-+  					GL11.glPushMatrix();
++  					GlStateManager.pushMatrix();
 +  										
 +  						GL11.glTranslatef(
 +  								(float)-controllerPos.x,
@@ -2222,15 +2222,15 @@
 +  						tes.getBuffer().begin(7, DefaultVertexFormats.POSITION_COLOR_NORMAL);
 +  						renderBox(tes, start, end, -0.02f*sc, 0.02f*sc, -0.0125f*sc, 0.0125f*sc, up, color, alpha);
 +  						tes.draw();
-+  					GL11.glPopMatrix();     
++  					GlStateManager.popMatrix();     
 +  				}
 +  		
 +  			
 +  				GlStateManager.enableTexture2D();
 +
-+  			GL11.glPopMatrix();
++  			GlStateManager.popMatrix();
 +  		GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  	GL11.glPopMatrix();
++  	GlStateManager.popMatrix();
 +  	}
 +
 +  	public void renderFlatQuad(Vec3d pos, float width, float height,float yaw, int r, int g, int b, int a)
@@ -2382,7 +2382,7 @@
 +  		if (area != null) {
 +  			float width = area[0] + oversize;
 +  			float length = area[1] + oversize;
-+  			GL11.glPushMatrix();
++  			GlStateManager.pushMatrix();
 +  				GL11.glTranslatef(-width / 2, 0, -length / 2);
 +  				GL11.glLightfv(GL11.GL_LIGHT0, GL11.GL_POSITION, setColorBuffer(width / 2, 1.8f, length / 2, 1));
 +  				GL11.glLightfv(GL11.GL_LIGHT0, GL11.GL_DIFFUSE, setColorBuffer(1.0F, 1.0F, 1.0F, 1.0F));
@@ -2460,7 +2460,7 @@
 +  					GL11.glTexCoord2f(repeat * width, 0);
 +  					GL11.glVertex3f(width, 0, length);
 +  				GL11.glEnd();
-+  			GL11.glPopMatrix();
++  			GlStateManager.popMatrix();
 +  		}
 +  	
 +  		RenderHelper.disableStandardItemLighting();
@@ -2476,7 +2476,7 @@
 +  		GlStateManager.enableCull();
 +        GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1F);
 +  		
-+  		GL11.glPushMatrix();
++  		GlStateManager.pushMatrix();
 +
 +  		boolean shaders = Shaders.shaderPackLoaded;
 +  		Shaders.shaderPackLoaded = false;
@@ -2537,7 +2537,7 @@
 +  		
 +  		Shaders.shaderPackLoaded = shaders;
 +  		
-+  		GL11.glPopMatrix();
++  		GlStateManager.popMatrix();
 +  		GlStateManager.disableFog();
 +  	}
 +  	
@@ -2599,7 +2599,7 @@
 +  		
 +  		crosshairRenderPos = crosshairRenderPos.add((aim.normalize().scale(-0.01))); //scooch closer a bit for light calc.		
 +  		
-+  		GL11.glPushMatrix();
++  		GlStateManager.pushMatrix();
 +  			Vec3d translate = crosshairRenderPos.subtract(mc.getRenderViewEntity().getPositionVector());
 +	  		GL11.glTranslated(translate.x , translate.y , translate.z );
 +	
@@ -2704,7 +2704,7 @@
 +	  		GlStateManager.disableBlend();
 +	  		GlStateManager.enableDepthTest();
 +	  		GlStateManager.color4f(1, 1, 1, 1);
-+  		GL11.glPopMatrix();
++  		GlStateManager.popMatrix();
 +
 +
 +  	}
@@ -2968,9 +2968,9 @@
 +  			AxisAlignedBB bb = mc.player.getEntityBoundingBox();
 +  			if(this.mc.vrSettings.vrShowBlueCircleBuddy && bb != null){ 	//blue circle buddy	  - have to draw here so it sits on top of overlays (face in block)
 +  				GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  				GL11.glPushMatrix();
++  				GlStateManager.pushMatrix();
 +  				GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  				GL11.glPushMatrix();
++  				GlStateManager.pushMatrix();
 +  				GlStateManager.loadIdentity();
 +  				
 +  					setupCameraTransform(par1, false);
@@ -3001,9 +3001,9 @@
 +                    setupPolyRendering(false);
 +  						
 +  				GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  				GL11.glPopMatrix();
++  				GlStateManager.popMatrix();
 +  				GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  				GL11.glPopMatrix();
++  				GlStateManager.popMatrix();
 +  			}
 +  		}
 +  		 		
@@ -3012,9 +3012,9 @@
 +
 +  				//render the camera
 +  				GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  				GL11.glPushMatrix();
++  				GlStateManager.pushMatrix();
 +  				GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  				GL11.glPushMatrix();
++  				GlStateManager.pushMatrix();
 +
 +  				setupCameraTransform(par1, false);
 +  				applyCameraDepth(false);
@@ -3037,9 +3037,9 @@
 +  				drawSizedQuad(320, 200, 0.25f * mc.vrPlayer.vrdata_world_render.worldScale);
 +  				
 +  				GL11.glMatrixMode(GL11.GL_PROJECTION);
-+  				GL11.glPopMatrix();
++  				GlStateManager.popMatrix();
 +  				GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+  				GL11.glPopMatrix();
++  				GlStateManager.popMatrix();
 +  			}
 +  		}
 +  			
@@ -3085,7 +3085,7 @@
 +                      this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 +                      mc.ingameGUI.drawTexturedModalRect(w, h, textureatlassprite, 16, 16);
 +          		}else{
-+          			this.mc.getTextureManager().bindTexture(mc.ingameGUI.INVENTORY_BACKGROUND);
++          			this.mc.getTextureManager().bindTexture(GuiContainer.INVENTORY_BACKGROUND);
 +              		int w = this.mc.mainWindow.getScaledWidth() / 2 - 109;
 +              		int h = this.mc.mainWindow.getScaledHeight() -39;
 +              		mc.ingameGUI.drawTexturedModalRect(w, h, 0 + iconp % 8 * 18, 198 + iconp / 8 * 18, 18, 18);        			
@@ -3133,7 +3133,8 @@
 +    
 +    private boolean shouldRenderHands() {	
 +        if(Main.viewonly) return false;
-+        if(mc.currentPass == RenderPass.THIRD) return false;
++        if (mc.currentPass == RenderPass.THIRD && mc.vrSettings.displayMirrorMode != VRSettings.MIRROR_MIXED_REALITY)
++            return false;
 +        return true;
 +    }
 +
@@ -3204,7 +3205,7 @@
 +
 +        // Pass matrici on to OpenGL...
 +        GL11.glMatrixMode(GL11.GL_PROJECTION);
-+        GL11.glPushMatrix();
++        GlStateManager.pushMatrix();
 +        GL11.glLoadIdentity();
 +        if (isStereo)
 +        {
@@ -3217,7 +3218,7 @@
 +        	GlStateManager.multMatrixf(Matrix4f.perspective(90f, (float) displayWidth / (float) displayHeight, minClipDistance, clipDistance));
 +        }
 +        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+        GL11.glPushMatrix();
++        GlStateManager.pushMatrix();
 +        GL11.glLoadIdentity();
 +
 +        int column = 8;
@@ -3250,9 +3251,9 @@
 +
 +        if(d)	GlStateManager.enableDepthTest();
 +        GL11.glMatrixMode(GL11.GL_PROJECTION);
-+        GL11.glPopMatrix();
++        GlStateManager.popMatrix();
 +        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-+        GL11.glPopMatrix();
++        GlStateManager.popMatrix();
 +    }
 +
 +    private FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(4);

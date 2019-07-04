@@ -124,7 +124,7 @@ public class VRData{
 	}
 	
 	public float getFacingYaw(){
-		return PlayerModelController.getFacingYaw(PlayerModelController.getMainPlayerRotInfo(this));
+		return getBodyYaw();
 	}
 	
 	public Vec3d getHeadPivot() {

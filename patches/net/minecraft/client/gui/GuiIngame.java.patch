@@ -19,7 +19,7 @@
  import net.minecraft.client.renderer.ItemRenderer;
  import net.minecraft.client.renderer.OpenGlHelper;
  import net.minecraft.client.renderer.RenderHelper;
-@@ -68,128 +73,139 @@
+@@ -68,128 +73,135 @@
  
  public class GuiIngame extends Gui
  {
@@ -144,10 +144,6 @@
 -        {
 -            this.renderPumpkinOverlay();
 -        }
-+	//VIVECRAFT - I forget what this is for.
-+	public static final ResourceLocation INVENTORY_BACKGROUND = new ResourceLocation("textures/gui/container/inventory.png");
-+	//
-+	
 +	private static final ResourceLocation VIGNETTE_TEX_PATH = new ResourceLocation("textures/misc/vignette.png");
 +	private static final ResourceLocation WIDGETS_TEX_PATH = new ResourceLocation("textures/gui/widgets.png");
 +	private static final ResourceLocation PUMPKIN_BLUR_TEX_PATH = new ResourceLocation("textures/misc/pumpkinblur.png");
@@ -280,7 +276,7 @@
          if (!this.mc.player.isPotionActive(MobEffects.NAUSEA))
          {
              float f = this.mc.player.prevTimeInPortal + (this.mc.player.timeInPortal - this.mc.player.prevTimeInPortal) * partialTicks;
-@@ -199,1302 +215,1395 @@
+@@ -199,1302 +211,1395 @@
                  this.renderPortal(f);
              }
          }

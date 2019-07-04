@@ -19,3 +19,12 @@
                                  ClickType clicktype = ClickType.PICKUP;
  
                                  if (flag2)
+@@ -640,7 +638,7 @@
+                 }
+                 else
+                 {
+-                    boolean flag1 = k != -999 && (InputMappings.isKeyDown(340) || InputMappings.isKeyDown(344));
++                    boolean flag1 = k != -999 && (InputMappings.isKeyDown(340) || InputMappings.isKeyDown(344) || isFakeShift());
+ 
+                     if (flag1)
+                     {

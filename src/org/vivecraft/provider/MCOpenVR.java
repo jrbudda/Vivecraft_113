@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.nio.IntBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.vivecraft.api.Vec3History;
@@ -503,10 +504,9 @@ public class MCOpenVR
 	}
 
 	private static Pointer ptrFomrString(String in){
-		Pointer p = new Memory(in.length()+1);
-		p.setString(0, in);
+		Pointer p = new Memory(in.getBytes(StandardCharsets.UTF_8).length + 1);
+		p.setString(0, in, StandardCharsets.UTF_8.name());
 		return p;
-
 	}
 
 	static void debugOut(int deviceindex){

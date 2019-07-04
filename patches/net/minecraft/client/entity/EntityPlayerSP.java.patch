@@ -95,7 +95,7 @@
      /** Ticks left before sprinting is disabled. */
      public int sprintingTicksLeft;
      public float renderArmYaw;
-@@ -183,12 +212,103 @@
+@@ -183,12 +212,100 @@
          this.dimension = DimensionType.OVERWORLD;
          this.ambientSoundHandlers.add(new UnderwaterAmbientSoundHandler(this, p_i48190_1_.getSoundHandler()));
      }
@@ -105,12 +105,9 @@
 +    	this.activeItemStack = item;
 +    }
 +
-+    
 +    public void setItemInUseCountClient(int count){
 +    	this.activeItemStackUseCount = count;
 +    }
-+    
-+    
 +	
 +	HashMap<Pair<Short, Integer>, TransactionMutex> pendingTransactions = new HashMap<>();
 +	
@@ -200,7 +197,7 @@
          return false;
      }
  
-@@ -199,6 +319,8 @@
+@@ -199,6 +316,8 @@
      {
      }
  
@@ -209,7 +206,7 @@
      public boolean startRiding(Entity entityIn, boolean force)
      {
          if (!super.startRiding(entityIn, force))
-@@ -219,10 +341,16 @@
+@@ -219,10 +338,16 @@
                  this.setRotationYawHead(entityIn.rotationYaw);
              }
  
@@ -226,7 +223,7 @@
      /**
       * Dismounts this entity from the entity it is riding.
       */
-@@ -230,6 +358,11 @@
+@@ -230,6 +355,11 @@
      {
          super.stopRiding();
          this.rowingBoat = false;
@@ -238,7 +235,7 @@
      }
  
      /**
-@@ -329,6 +462,18 @@
+@@ -329,6 +459,18 @@
              boolean flag2 = d0 * d0 + d1 * d1 + d2 * d2 > 9.0E-4D || this.positionUpdateTicks >= 20;
              boolean flag3 = d3 != 0.0D || d4 != 0.0D;
  
@@ -257,7 +254,7 @@
              if (this.isPassenger())
              {
                  this.connection.sendPacket(new CPacketPlayer.PositionRotation(this.motionX, -999.0D, this.motionZ, this.rotationYaw, this.rotationPitch, this.onGround));
-@@ -350,6 +495,7 @@
+@@ -350,6 +492,7 @@
              {
                  this.connection.sendPacket(new CPacketPlayer(this.onGround));
              }
@@ -265,7 +262,7 @@
  
              if (flag2)
              {
-@@ -366,6 +512,13 @@
+@@ -366,6 +509,13 @@
              }
  
              this.prevOnGround = this.onGround;
@@ -279,7 +276,7 @@
              this.autoJumpEnabled = this.mc.gameSettings.autoJump;
          }
      }
-@@ -791,6 +944,15 @@
+@@ -791,6 +941,15 @@
       */
      public void displayGUIChest(IInventory chestInventory)
      {
@@ -295,7 +292,7 @@
          String s = chestInventory instanceof IInteractionObject ? ((IInteractionObject)chestInventory).getGuiID() : "minecraft:container";
  
          if ("minecraft:chest".equals(s))
-@@ -832,11 +994,27 @@
+@@ -832,11 +991,27 @@
  
      public void openHorseInventory(AbstractHorse horse, IInventory inventoryIn)
      {
@@ -323,7 +320,7 @@
          String s = guiOwner.getGuiID();
  
          if ("minecraft:crafting_table".equals(s))
-@@ -855,6 +1033,14 @@
+@@ -855,6 +1030,14 @@
  
      public void displayVillagerTradeGui(IMerchant villager)
      {
@@ -338,7 +335,7 @@
          this.mc.displayGuiScreen(new GuiMerchant(this.inventory, villager, this.world));
      }
  
-@@ -974,6 +1160,9 @@
+@@ -974,6 +1157,9 @@
          float f = 0.8F;
          boolean flag2 = this.movementInput.moveForward >= 0.8F;
          this.movementInput.updatePlayerMoveState();
@@ -348,7 +345,7 @@
          this.mc.getTutorial().handleMovement(this.movementInput);
  
          if (this.isHandActive() && !this.isPassenger())
-@@ -1147,6 +1336,9 @@
+@@ -1147,6 +1333,9 @@
          }
  
          super.livingTick();
@@ -358,7 +355,7 @@
  
          if (this.onGround && this.capabilities.isFlying && !this.mc.playerController.isSpectatorMode())
          {
-@@ -1198,10 +1390,47 @@
+@@ -1198,10 +1387,48 @@
       */
      public void move(MoverType type, double x, double y, double z)
      {
@@ -374,7 +371,8 @@
 +    	Vec3d roomOrigin = OpenVRPlayer.get().roomOrigin;
 +    	//   	Vec3 camloc = Minecraft.getMinecraft().vrPlayer.getHMDPos_World();
 +
-+    	if ( (mc.climbTracker.isGrabbingLadder() || freemove || mc.swimTracker.isActive(this)) && (this.moveForward != 0 || this.isElytraFlying() || Math.abs(this.motionX) > 0.01 || Math.abs(this.motionZ) > 0.01))
++    	if ( (mc.climbTracker.isGrabbingLadder() || freemove || mc.swimTracker.isActive(this)) && 
++    			(this.moveForward != 0 || this.isElytraFlying() || Math.abs(this.motionX) > 0.01 || Math.abs(this.motionZ) > 0.01))
 +    	{
 +    		double ox = roomOrigin.x - posX;
 +    		double oz = roomOrigin.z - posZ;
@@ -410,7 +408,7 @@
      }
  
      public boolean isAutoJumpEnabled()
-@@ -1227,12 +1456,17 @@
+@@ -1227,12 +1454,17 @@
                      float f = this.getAIMoveSpeed();
                      float f1 = (float)vec3d2.lengthSquared();
  
@@ -430,7 +428,7 @@
                          vec3d2 = new Vec3d((double)(f2 * f5 - f3 * f4), vec3d2.y, (double)(f3 * f5 + f2 * f4));
                          f1 = (float)vec3d2.lengthSquared();
  
-@@ -1406,4 +1640,373 @@
+@@ -1406,4 +1638,373 @@
              return this.eyesInWaterPlayer;
          }
      }
