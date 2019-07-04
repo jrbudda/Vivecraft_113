@@ -880,11 +880,10 @@
  
          if (flag1 && this.mc.objectMouseOver != null)
          {
-@@ -1417,12 +1726,15 @@
- 
+@@ -1418,11 +1727,15 @@
          GlStateManager.blendFuncSeparate(770, 771, 1, 0);
          GlStateManager.disableBlend();
--        this.enableLightmap();
+         this.enableLightmap();
 +
 +        GlStateManager.matrixMode(GL11.GL_MODELVIEW);
 +        GlStateManager.popMatrix();
@@ -898,7 +897,7 @@
          }
  
          particlemanager.renderLitParticles(entity, partialTicks);
-@@ -1432,14 +1744,14 @@
+@@ -1432,14 +1745,14 @@
  
          if (flag)
          {
@@ -915,7 +914,7 @@
          }
  
          this.disableLightmap();
-@@ -1447,7 +1759,7 @@
+@@ -1447,7 +1760,7 @@
  
          if (Config.isShaders())
          {
@@ -924,7 +923,7 @@
          }
  
          GlStateManager.enableCull();
-@@ -1467,10 +1779,30 @@
+@@ -1467,10 +1780,30 @@
  
          GlStateManager.depthMask(true);
          renderglobal.renderWorldBorder(entity, partialTicks);
@@ -938,10 +937,10 @@
 +        // We'll only disable it with shaders, as otherwise it gets weird because of how shaders works.
 +        //Shaders.isItemToRenderMainTranslucent() ||
 +        			//Shaders.isItemToRenderOffTranslucent() || mc.getItemRenderer().getFade() < 1;
- 
++
 +        if (shouldRenderHands())
 +            renderVRHands(!correctTranslucentGui, partialTicks);
-+
+ 
 +        if(!correctTranslucentGui) {
 +            if (flag)
 +                Shaders.useProgram(Shaders.ProgramHandWater);
@@ -956,7 +955,7 @@
              Shaders.preWater();
          }
  
-@@ -1520,17 +1852,55 @@
+@@ -1520,17 +1853,55 @@
              this.renderCloudsCheck(renderglobal, partialTicks, d0, d1, d2);
          }
  
@@ -1013,7 +1012,7 @@
              {
                  ShadersRender.renderHand1(this, partialTicks);
                  Shaders.renderCompositeFinal();
-@@ -1547,13 +1917,113 @@
+@@ -1547,13 +1918,113 @@
                  this.renderHand(partialTicks);
              }
          }
@@ -1028,8 +1027,8 @@
 +        
 +        restoreRVEPos((EntityLivingBase) mc.getRenderViewEntity()); //unhack the RVE position.
 +
-+    }
-+
+     }
+ 
 +    private void renderVRLit(boolean translucent, float partialTicks) {
 +    	renderVRGuiElements(translucent, partialTicks);
 +
@@ -1057,8 +1056,8 @@
 +            // Put back the eye stencil
 +            this.drawEyeStencil();
 +        }
-     }
- 
++    }
++
 +    private void renderVRHands(boolean translucent, float partialTicks) {
 +        this.mc.profiler.startSection("hands");
 +
@@ -1128,7 +1127,7 @@
      private void renderCloudsCheck(RenderGlobal renderGlobalIn, float partialTicks, double viewEntityX, double viewEntityY, double viewEntityZ)
      {
          if (this.mc.gameSettings.shouldRenderClouds() != 0 && !Config.isCloudsOff() && Shaders.shouldRenderClouds(this.mc.gameSettings))
-@@ -1561,7 +2031,11 @@
+@@ -1561,7 +2032,11 @@
              this.mc.profiler.endStartSection("clouds");
              GlStateManager.matrixMode(5889);
              GlStateManager.loadIdentity();
@@ -1141,7 +1140,7 @@
              GlStateManager.matrixMode(5888);
              GlStateManager.pushMatrix();
              this.fogRenderer.setupFog(0, partialTicks);
-@@ -1570,7 +2044,11 @@
+@@ -1570,7 +2045,11 @@
              GlStateManager.popMatrix();
              GlStateManager.matrixMode(5889);
              GlStateManager.loadIdentity();
@@ -1154,7 +1153,7 @@
              GlStateManager.matrixMode(5888);
          }
      }
-@@ -2002,7 +2480,7 @@
+@@ -2002,7 +2481,7 @@
              this.updatedWorld = world;
          }
  
@@ -1163,7 +1162,7 @@
          {
              Shaders.configAntialiasingLevel = 0;
          }
-@@ -2242,36 +2720,29 @@
+@@ -2242,36 +2721,29 @@
      }
  
      private void renderItemActivation(int widthsp, int heightScaled, float partialTicks)
@@ -1223,7 +1222,7 @@
      }
  
      public Minecraft getMinecraft()
-@@ -2288,4 +2759,2044 @@
+@@ -2288,4 +2760,2044 @@
      {
          return this.farPlaneDistance;
      }
