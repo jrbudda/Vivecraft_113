@@ -22,10 +22,6 @@
 	{
 		"name": "optifine:OptiFine:$OFVERSION",
 		"MMC-hint": "local"
-	}, 
-	{
-		"url": "http://vivecraft.org/jar/", 
-		"name": "de.fruitfly.ovr:JRift:0.8.0.0.1"
 	}
 	],
 	"mainClass": "net.minecraft.launchwrapper.Launch",

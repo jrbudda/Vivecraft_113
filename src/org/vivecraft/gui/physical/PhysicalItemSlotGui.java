@@ -1,9 +1,7 @@
 package org.vivecraft.gui.physical;
 
-import org.vivecraft.control.VRButtonMapping;
 import org.vivecraft.gui.physical.interactables.Interactable;
 import org.vivecraft.gui.physical.interactables.PhysicalItemSlot;
-import org.vivecraft.provider.MCOpenVR;
 import org.vivecraft.utils.Quaternion;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -52,7 +50,7 @@ public class PhysicalItemSlotGui extends PhysicalGui {
 	void init() {
 		loadSlots();
 		
-		VRButtonMapping vrPrime=mc.vrSettings.buttonMappings.get(MCOpenVR.keyInteractVRprimary.getKeyDescription());
+		/*VRButtonMapping vrPrime=mc.vrSettings.buttonMappings.get(MCOpenVR.keyInteractVRprimary.getKeyDescription());
 		vrPrime.registerListener(new VRButtonMapping.KeyListener() {
 			@Override
 			public boolean onPressed() {
@@ -109,7 +107,7 @@ public class PhysicalItemSlotGui extends PhysicalGui {
 			@Override
 			public void onUnpressed() {
 			}
-		});
+		});*/
 		
 	}
 

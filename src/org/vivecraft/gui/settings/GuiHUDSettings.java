@@ -55,7 +55,6 @@ public class GuiHUDSettings extends GuiVROptionsBase
             BiFunction<GuiVROptionButton, Vec2f, Boolean> func = (button, mousePos) -> {
 				GuiHUDSettings.this.settings.saveOptions();
 				GuiVRControls guiVRControls = new GuiVRControls(GuiHUDSettings.this);
-				guiVRControls.guiFilter = true;
 				GuiHUDSettings.this.mc.displayGuiScreen(guiVRControls);
 				return false;
 			};

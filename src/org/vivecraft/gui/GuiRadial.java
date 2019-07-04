@@ -1,7 +1,8 @@
 package org.vivecraft.gui;
 
-import org.vivecraft.control.VRButtonMapping;
+import org.vivecraft.control.VRInputAction;
 import org.vivecraft.gui.framework.TwoHandedGuiScreen;
+import org.vivecraft.provider.MCOpenVR;
 
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.resources.I18n;
@@ -93,10 +94,10 @@ public class GuiRadial extends TwoHandedGuiScreen
 					public void onClick(double mouseX, double mouseY) {
 						if (idx < 200 )
 						{
-							VRButtonMapping vb = mc.vrSettings.buttonMappings.get(arr[idx]);
+							VRInputAction vb = MCOpenVR.getInputAction(arr[idx]);
 							if(vb!=null) {
-								vb.press();
-								vb.scheduleUnpress(2);
+								vb.pressBinding();
+								vb.unpressBinding(2);
 							}
 						} else {
 							if(idx == 201) {

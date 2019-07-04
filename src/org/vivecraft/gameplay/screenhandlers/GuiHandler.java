@@ -1,19 +1,18 @@
 package org.vivecraft.gameplay.screenhandlers;
 
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-
 import org.vivecraft.api.VRData.VRDevicePose;
-import org.vivecraft.control.VRButtonMapping;
+import org.vivecraft.control.ControllerType;
+import org.vivecraft.control.HandedKeyBinding;
 import org.vivecraft.provider.MCOpenVR;
 import org.vivecraft.render.RenderPass;
 import org.vivecraft.settings.VRSettings;
 import org.vivecraft.utils.InputSimulator;
 
-import de.fruitfly.ovr.structs.Matrix4f;
-import de.fruitfly.ovr.structs.Quatf;
-import de.fruitfly.ovr.structs.Vector3f;
-import jopenvr.OpenVRUtil;
+import org.vivecraft.utils.Matrix4f;
+import org.vivecraft.utils.OpenVRUtil;
+import org.vivecraft.utils.Quaternion;
+import org.vivecraft.utils.Vector3;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiEnchantment;
@@ -68,18 +67,38 @@ public class GuiHandler {
 	public static float hudScale = 1.0f;
 	public static Vec3d hudPos_room = new Vec3d(0,0,0);
 	public static Matrix4f hudRotation_room = new Matrix4f();
-	
-	public static final KeyBinding keyMenuButton = new KeyBinding("GUI Menu Button", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static final KeyBinding keyLeftClick = new KeyBinding("GUI Left Click", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static final KeyBinding keyRightClick = new KeyBinding("GUI Right Click", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static final KeyBinding keyMiddleClick = new KeyBinding("GUI Middle Click", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static final KeyBinding keyShift = new KeyBinding("GUI Shift", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static final KeyBinding keyCtrl = new KeyBinding("GUI Ctrl", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static final KeyBinding keyAlt = new KeyBinding("GUI Alt", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static final KeyBinding keyScrollUp = new KeyBinding("GUI Scroll Up", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static final KeyBinding keyScrollDown = new KeyBinding("GUI Scroll Down", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
-	public static Framebuffer guiFramebuffer = null;
 
+	public static final KeyBinding keyLeftClick = new KeyBinding("vivecraft.key.guiLeftClick", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
+	public static final KeyBinding keyRightClick = new KeyBinding("vivecraft.key.guiRightClick", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
+	public static final KeyBinding keyMiddleClick = new KeyBinding("vivecraft.key.guiMiddleClick", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
+	public static final KeyBinding keyShift = new KeyBinding("vivecraft.key.guiShift", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
+	public static final KeyBinding keyCtrl = new KeyBinding("vivecraft.key.guiCtrl", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
+	public static final KeyBinding keyAlt = new KeyBinding("vivecraft.key.guiAlt", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
+	public static final KeyBinding keyScrollUp = new KeyBinding("vivecraft.key.guiScrollUp", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
+	public static final KeyBinding keyScrollDown = new KeyBinding("vivecraft.key.guiScrollDown", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI");
+	public static final KeyBinding keyScrollAxis = new KeyBinding("vivecraft.key.guiScrollAxis", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft GUI"); // dummy binding
+	public static final HandedKeyBinding keyKeyboardClick = new HandedKeyBinding("vivecraft.key.keyboardClick", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft Keyboard") {
+		@Override
+		public boolean isPriorityOnController(ControllerType type) {
+			if (KeyboardHandler.Showing && !mc.vrSettings.physicalKeyboard) {
+				return KeyboardHandler.isUsingController(type);
+			}
+			return RadialHandler.isShowing() && RadialHandler.isUsingController(type);
+		}
+	};
+	public static final HandedKeyBinding keyKeyboardShift = new HandedKeyBinding("vivecraft.key.keyboardShift", GLFW.GLFW_KEY_UNKNOWN, "Vivecraft Keyboard") {
+		@Override
+		public boolean isPriorityOnController(ControllerType type) {
+			if (KeyboardHandler.Showing) {
+				if (mc.vrSettings.physicalKeyboard)
+					return true;
+				return KeyboardHandler.isUsingController(type);
+			}
+			return RadialHandler.isShowing() && RadialHandler.isUsingController(type);
+		}
+	};
+
+	public static Framebuffer guiFramebuffer = null;
 
 	public static void processGui() {
 		if(mc.currentScreen == null)return;
@@ -135,19 +154,17 @@ public class GuiHandler {
 	}
 
 	public static Vec2f getTexCoordsForCursor(Vec3d guiPos_room, Matrix4f guiRotation_room, GuiScreen screen, float guiScale, VRDevicePose controller) {
-		Vector3f controllerPos = new Vector3f();
+	
 		Vec3d con = controller.getPosition();
-		controllerPos.x	= (float) con.x;
-		controllerPos.y	= (float) con.y;
-		controllerPos.z	= (float) con.z;
+		Vector3 controllerPos = new Vector3(con);
 
 		Vec3d controllerdir = controller.getDirection();
-		Vector3f cdir = new Vector3f((float)controllerdir.x,(float) controllerdir.y,(float) controllerdir.z);
-		Vector3f forward = new Vector3f(0,0,1);
+		Vector3 cdir = new Vector3((float)controllerdir.x,(float) controllerdir.y,(float) controllerdir.z);
+		Vector3 forward = new Vector3(0,0,1);
 
-		Vector3f guiNormal = guiRotation_room.transform(forward);
-		Vector3f guiRight = guiRotation_room.transform(new Vector3f(1,0,0));
-		Vector3f guiUp = guiRotation_room.transform(new Vector3f(0,1,0));
+		Vector3 guiNormal = guiRotation_room.transform(forward);
+		Vector3 guiRight = guiRotation_room.transform(new Vector3(1,0,0));
+		Vector3 guiUp = guiRotation_room.transform(new Vector3(0,1,0));
 		float guiNormalDotControllerDirection = guiNormal.dot(cdir);
 		if (Math.abs(guiNormalDotControllerDirection) > 0.00001f)
 		{//pointed normal to the GUI
@@ -156,19 +173,19 @@ public class GuiHandler {
 			float guiHeight = 1.0f;	
 			float guiHalfHeight = guiHeight * 0.5f;
 
-			Vector3f gp = new Vector3f();
+			Vector3 gp = new Vector3();
 
-			gp.x = (float) (guiPos_room.x);// + interPolatedRoomOrigin.x ) ;
-			gp.y = (float) (guiPos_room.y);// + interPolatedRoomOrigin.y ) ;
-			gp.z = (float) (guiPos_room.z);// + interPolatedRoomOrigin.z ) ;
+			gp.setX((float) (guiPos_room.x));// + interPolatedRoomOrigin.x ) ;
+			gp.setY((float) (guiPos_room.y));// + interPolatedRoomOrigin.y ) ;
+			gp.setZ((float) (guiPos_room.z));// + interPolatedRoomOrigin.z ) ;
 
-			Vector3f guiTopLeft = gp.subtract(guiUp.divide(1.0f / guiHalfHeight)).subtract(guiRight.divide(1.0f/guiHalfWidth));
+			Vector3 guiTopLeft = gp.subtract(guiUp.divide(1.0f / guiHalfHeight)).subtract(guiRight.divide(1.0f/guiHalfWidth));
 
 			float intersectDist = -guiNormal.dot(controllerPos.subtract(guiTopLeft)) / guiNormalDotControllerDirection;
 			if (intersectDist > 0) {
-				Vector3f pointOnPlane = controllerPos.add(cdir.divide(1.0f / intersectDist));
+				Vector3 pointOnPlane = controllerPos.add(cdir.divide(1.0f / intersectDist));
 
-				Vector3f relativePoint = pointOnPlane.subtract(guiTopLeft);
+				Vector3 relativePoint = pointOnPlane.subtract(guiTopLeft);
 				float u = relativePoint.dot(guiRight.divide(1.0f / guiWidth));
 				float v = relativePoint.dot(guiUp.divide(1.0f / guiWidth));
 
@@ -186,163 +203,155 @@ public class GuiHandler {
 	}
 
 	public static void processBindingsGui() {
-		if (controllerMouseX >= 0 && controllerMouseX < mc.mainWindow.getWidth()
-				&& controllerMouseY >=0 && controllerMouseY < mc.mainWindow.getWidth())
-		{
-			//This is how the MouseHelper do.
-			/*double deltaX = (controllerMouseX - lastMouseX)
-			 * (double)mc.mainWindow.getScaledWidth() / (double)mc.mainWindow.getWidth();
-			double deltaY = (controllerMouseY - lastMouseY)
-			 * (double)mc.mainWindow.getScaledHeight() / (double)mc.mainWindow.getHeight();
-			double d0 = Math.min(Math.max((int) controllerMouseX, 0), mc.mainWindow.getWidth())
-			 * (double)mc.mainWindow.getScaledWidth() / (double)mc.mainWindow.getWidth();
-			double d1 = Math.min(Math.max((int) controllerMouseY, 0), mc.mainWindow.getWidth())
-			 * (double)mc.mainWindow.getScaledHeight() / (double)mc.mainWindow.getHeight();*/
+		boolean mouseValid = controllerMouseX >= 0 && controllerMouseX < mc.mainWindow.getWidth()
+				&& controllerMouseY >=0 && controllerMouseY < mc.mainWindow.getWidth();
 
-			if (MCOpenVR.controllerDeviceIndex[MCOpenVR.RIGHT_CONTROLLER] != -1)
-			{
-				//if (keyLeftClick.isKeyDown() && mc.currentScreen != null)
-				//	mc.currentScreen.mouseDragged(d0, d1, 0, deltaX, deltaY);//Signals mouse move
+		//This is how the MouseHelper do.
+		/*double deltaX = (controllerMouseX - lastMouseX)
+		 * (double)mc.mainWindow.getScaledWidth() / (double)mc.mainWindow.getWidth();
+		double deltaY = (controllerMouseY - lastMouseY)
+		 * (double)mc.mainWindow.getScaledHeight() / (double)mc.mainWindow.getHeight();
+		double d0 = Math.min(Math.max((int) controllerMouseX, 0), mc.mainWindow.getWidth())
+		 * (double)mc.mainWindow.getScaledWidth() / (double)mc.mainWindow.getWidth();
+		double d1 = Math.min(Math.max((int) controllerMouseY, 0), mc.mainWindow.getWidth())
+		 * (double)mc.mainWindow.getScaledHeight() / (double)mc.mainWindow.getHeight();*/
 
-				//LMB
-				if (keyLeftClick.isPressed() && mc.currentScreen != null)
-				{ //press left mouse button
-					//if (Display.isActive())
-					//	KeyboardSimulator.robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-					//else
-					//	mc.currentScreen.mouseClicked(d0, d1, 0);
-					InputSimulator.pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
-					lastPressedLeftClick = true;
-				}	
+		//if (keyLeftClick.isKeyDown() && mc.currentScreen != null)
+		//	mc.currentScreen.mouseDragged(d0, d1, 0, deltaX, deltaY);//Signals mouse move
 
-				if (!keyLeftClick.isKeyDown() && lastPressedLeftClick && mc.currentScreen != null) {
-					//release left mouse button
-					//if (Display.isActive()) KeyboardSimulator.robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-					//else 
-					//	mc.currentScreen.mouseReleased(d0, d1, 0);
-					InputSimulator.releaseMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
-					lastPressedLeftClick = false;
-				}
-				//end LMB
-
-				//RMB
-				if (keyRightClick.isPressed() && mc.currentScreen != null) {
-					//press right mouse button
-					//if (Display.isActive()) KeyboardSimulator.robot.mousePress(InputEvent.BUTTON3_DOWN_MASK);
-					//else 
-					//	mc.currentScreen.mouseClicked(d0, d1, 1);
-					InputSimulator.pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
-					lastPressedRightClick = true;
-				}	
-
-				//if (keyRightClick.isKeyDown() && mc.currentScreen != null)
-				//	mc.currentScreen.mouseDragged(d0, d1, 0, deltaX, deltaY);//Signals mouse move
-
-				if (!keyRightClick.isKeyDown() && lastPressedRightClick && mc.currentScreen != null) {
-					//release right mouse button
-					//if (Display.isActive())
-					//	KeyboardSimulator.robot.mouseRelease(InputEvent.BUTTON3_DOWN_MASK);
-					//else
-					//	mc.currentScreen.mouseReleased(d0, d1, 1);
-					InputSimulator.releaseMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
-					lastPressedRightClick = false;
-				}	
-				//end RMB	
-
-				//MMB
-				if (keyMiddleClick.isPressed() && mc.currentScreen != null) {
-					//press middle mouse button
-					//if (Display.isActive())
-					//	KeyboardSimulator.robot.mousePress(InputEvent.BUTTON2_DOWN_MASK);
-					//else
-					//	mc.currentScreen.mouseClicked(d0, d1, 2);
-					InputSimulator.pressMouse(GLFW.GLFW_MOUSE_BUTTON_MIDDLE);
-					lastPressedMiddleClick = true;
-				}	
-
-				//if (keyMiddleClick.isKeyDown() && mc.currentScreen != null)
-				//	mc.currentScreen.mouseDragged(d0, d1, 0, deltaX, deltaY);//Signals mouse move
-
-				if (!keyMiddleClick.isKeyDown() && lastPressedMiddleClick && mc.currentScreen != null) {
-					//release middle mouse button
-					//if (Display.isActive())
-					//	KeyboardSimulator.robot.mouseRelease(InputEvent.BUTTON2_DOWN_MASK);
-					//else 
-					//	mc.currentScreen.mouseReleased(d0, d1, 2);
-					InputSimulator.releaseMouse(GLFW.GLFW_MOUSE_BUTTON_MIDDLE);
-					lastPressedMiddleClick = false;
-				}	
-				//end MMB
-
-			}
+		//LMB
+		if (keyLeftClick.isPressed() && mc.currentScreen != null && mouseValid)
+		{ //press left mouse button
+			//if (Display.isActive())
+			//	KeyboardSimulator.robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+			//else
+			//	mc.currentScreen.mouseClicked(d0, d1, 0);
+			InputSimulator.pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			lastPressedLeftClick = true;
 		}
+
+		if (!keyLeftClick.isKeyDown() && lastPressedLeftClick) {
+			//release left mouse button
+			//if (Display.isActive()) KeyboardSimulator.robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+			//else
+			//	mc.currentScreen.mouseReleased(d0, d1, 0);
+			InputSimulator.releaseMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			lastPressedLeftClick = false;
+		}
+		//end LMB
+
+		//RMB
+		if (keyRightClick.isPressed() && mc.currentScreen != null && mouseValid) {
+			//press right mouse button
+			//if (Display.isActive()) KeyboardSimulator.robot.mousePress(InputEvent.BUTTON3_DOWN_MASK);
+			//else
+			//	mc.currentScreen.mouseClicked(d0, d1, 1);
+			InputSimulator.pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+			lastPressedRightClick = true;
+		}
+
+		//if (keyRightClick.isKeyDown() && mc.currentScreen != null)
+		//	mc.currentScreen.mouseDragged(d0, d1, 0, deltaX, deltaY);//Signals mouse move
+
+		if (!keyRightClick.isKeyDown() && lastPressedRightClick) {
+			//release right mouse button
+			//if (Display.isActive())
+			//	KeyboardSimulator.robot.mouseRelease(InputEvent.BUTTON3_DOWN_MASK);
+			//else
+			//	mc.currentScreen.mouseReleased(d0, d1, 1);
+			InputSimulator.releaseMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+			lastPressedRightClick = false;
+		}
+		//end RMB
+
+		//MMB
+		if (keyMiddleClick.isPressed() && mc.currentScreen != null && mouseValid) {
+			//press middle mouse button
+			//if (Display.isActive())
+			//	KeyboardSimulator.robot.mousePress(InputEvent.BUTTON2_DOWN_MASK);
+			//else
+			//	mc.currentScreen.mouseClicked(d0, d1, 2);
+			InputSimulator.pressMouse(GLFW.GLFW_MOUSE_BUTTON_MIDDLE);
+			lastPressedMiddleClick = true;
+		}
+
+		//if (keyMiddleClick.isKeyDown() && mc.currentScreen != null)
+		//	mc.currentScreen.mouseDragged(d0, d1, 0, deltaX, deltaY);//Signals mouse move
+
+		if (!keyMiddleClick.isKeyDown() && lastPressedMiddleClick) {
+			//release middle mouse button
+			//if (Display.isActive())
+			//	KeyboardSimulator.robot.mouseRelease(InputEvent.BUTTON2_DOWN_MASK);
+			//else
+			//	mc.currentScreen.mouseReleased(d0, d1, 2);
+			InputSimulator.releaseMouse(GLFW.GLFW_MOUSE_BUTTON_MIDDLE);
+			lastPressedMiddleClick = false;
+		}
+		//end MMB
 
 		//lastMouseX = controllerMouseX;
 		//lastMouseY = controllerMouseY;
 
-		if (MCOpenVR.controllerDeviceIndex[MCOpenVR.LEFT_CONTROLLER] != -1) {
-			//Shift
-			if (keyShift.isPressed())
-			{
-				//press Shift
-				//if (mc.currentScreen != null) mc.currentScreen.pressShiftFake = true;
-				//if (Display.isActive()) KeyboardSimulator.robot.keyPress(KeyEvent.VK_SHIFT);
-				InputSimulator.pressKey(GLFW.GLFW_KEY_LEFT_SHIFT);
-				lastPressedShift = true;
-			}
-
-
-			if (!keyShift.isKeyDown() && lastPressedShift)
-			{
-				//release Shift
-				//if (mc.currentScreen != null) mc.currentScreen.pressShiftFake = false;
-				//if (Display.isActive()) KeyboardSimulator.robot.keyRelease(KeyEvent.VK_SHIFT);
-				InputSimulator.releaseKey(GLFW.GLFW_KEY_LEFT_SHIFT);
-				lastPressedShift = false;
-			}	
-			//end Shift
-
-			//Ctrl
-			if (keyCtrl.isPressed())
-			{
-				//press Ctrl
-				//if (Display.isActive()) KeyboardSimulator.robot.keyPress(KeyEvent.VK_CONTROL);
-				InputSimulator.pressKey(GLFW.GLFW_KEY_LEFT_CONTROL);
-				lastPressedCtrl = true;
-			}
-
-
-			if (!keyCtrl.isKeyDown() && lastPressedCtrl)
-			{
-				//release Ctrl
-				//if (Display.isActive()) KeyboardSimulator.robot.keyRelease(KeyEvent.VK_CONTROL);
-				InputSimulator.releaseKey(GLFW.GLFW_KEY_LEFT_CONTROL);
-				lastPressedCtrl = false;
-			}	
-			//end Ctrl
-
-			//Alt
-			if (keyAlt.isPressed())
-			{
-				//press Alt
-				//if (Display.isActive()) KeyboardSimulator.robot.keyPress(KeyEvent.VK_ALT);
-				InputSimulator.pressKey(GLFW.GLFW_KEY_LEFT_ALT);
-				lastPressedAlt = true;
-			}
-
-
-			if (!keyAlt.isKeyDown() && lastPressedAlt)
-			{
-				//release Alt
-				//if (Display.isActive()) KeyboardSimulator.robot.keyRelease(KeyEvent.VK_ALT);
-				InputSimulator.releaseKey(GLFW.GLFW_KEY_LEFT_ALT);
-				lastPressedAlt = false;
-			}	
-			//end Alt
-
+		//Shift
+		if (keyShift.isPressed() && mc.currentScreen != null)
+		{
+			//press Shift
+			//if (mc.currentScreen != null) mc.currentScreen.pressShiftFake = true;
+			//if (Display.isActive()) KeyboardSimulator.robot.keyPress(KeyEvent.VK_SHIFT);
+			InputSimulator.pressKey(GLFW.GLFW_KEY_LEFT_SHIFT);
+			lastPressedShift = true;
 		}
 
-		if (keyScrollUp.isPressed()) {		
+
+		if (!keyShift.isKeyDown() && lastPressedShift)
+		{
+			//release Shift
+			//if (mc.currentScreen != null) mc.currentScreen.pressShiftFake = false;
+			//if (Display.isActive()) KeyboardSimulator.robot.keyRelease(KeyEvent.VK_SHIFT);
+			InputSimulator.releaseKey(GLFW.GLFW_KEY_LEFT_SHIFT);
+			lastPressedShift = false;
+		}
+		//end Shift
+
+		//Ctrl
+		if (keyCtrl.isPressed() && mc.currentScreen != null)
+		{
+			//press Ctrl
+			//if (Display.isActive()) KeyboardSimulator.robot.keyPress(KeyEvent.VK_CONTROL);
+			InputSimulator.pressKey(GLFW.GLFW_KEY_LEFT_CONTROL);
+			lastPressedCtrl = true;
+		}
+
+
+		if (!keyCtrl.isKeyDown() && lastPressedCtrl)
+		{
+			//release Ctrl
+			//if (Display.isActive()) KeyboardSimulator.robot.keyRelease(KeyEvent.VK_CONTROL);
+			InputSimulator.releaseKey(GLFW.GLFW_KEY_LEFT_CONTROL);
+			lastPressedCtrl = false;
+		}
+		//end Ctrl
+
+		//Alt
+		if (keyAlt.isPressed() && mc.currentScreen != null)
+		{
+			//press Alt
+			//if (Display.isActive()) KeyboardSimulator.robot.keyPress(KeyEvent.VK_ALT);
+			InputSimulator.pressKey(GLFW.GLFW_KEY_LEFT_ALT);
+			lastPressedAlt = true;
+		}
+
+
+		if (!keyAlt.isKeyDown() && lastPressedAlt)
+		{
+			//release Alt
+			//if (Display.isActive()) KeyboardSimulator.robot.keyRelease(KeyEvent.VK_ALT);
+			InputSimulator.releaseKey(GLFW.GLFW_KEY_LEFT_ALT);
+			lastPressedAlt = false;
+		}
+		//end Alt
+
+		if (keyScrollUp.isPressed() && mc.currentScreen != null) {
 			MCOpenVR.triggerBindingHapticPulse(keyScrollUp, 400);
 
 			//	if(mc.isGameFocused()) {
@@ -353,7 +362,7 @@ public class GuiHandler {
 			InputSimulator.scrollMouse(0, 4);
 		}
 
-		if (keyScrollDown.isPressed()) {
+		if (keyScrollDown.isPressed() && mc.currentScreen != null) {
 				MCOpenVR.triggerBindingHapticPulse(keyScrollDown, 400);
 			//	if(mc.isGameFocused()) {
 			//		KeyboardSimulator.robot.mouseWheel(120);
@@ -362,26 +371,13 @@ public class GuiHandler {
 			//	}
 			InputSimulator.scrollMouse(0, -4);
 		}
-
-		if(keyMenuButton.isPressed()) { //handle esc
-			//if(mc.isGameFocused()){ //keep this one for now.
-				InputSimulator.pressKey(GLFW.GLFW_KEY_ESCAPE); //window focus... yadda yadda
-				InputSimulator.releaseKey(GLFW.GLFW_KEY_ESCAPE); //window focus... yadda yadda
-			//}
-			//else {
-			//	if (mc.player != null) mc.player.closeScreen();
-			//	else mc.displayGuiScreen((GuiScreen)null);
-			//}
-
-			KeyboardHandler.setOverlayShowing(false);	
-		}
 	}
 
 	
 	
 	public static void onGuiScreenChanged(GuiScreen previousScreen, GuiScreen newScreen, boolean unpressKeys)
 	{
-		if(unpressKeys){
+		/*if(unpressKeys){
 			for (VRButtonMapping mapping : mc.vrSettings.buttonMappings.values()) {
 				if(newScreen!=null) {
 					if(mapping.isGUIBinding() && mapping.keyBinding != mc.gameSettings.keyBindInventory)
@@ -389,7 +385,10 @@ public class GuiHandler {
 				} else
 					mapping.actuallyUnpress();
 			}
-		}
+		}*/
+
+		if (unpressKeys)
+			MCOpenVR.unpressBindingsNextFrame = true;
 
 		if(newScreen == null) {
 			//just insurance
@@ -436,7 +435,7 @@ public class GuiHandler {
 
 		if((previousScreen==null && newScreen != null) || (newScreen instanceof GuiChat || newScreen instanceof GuiScreenBook || newScreen instanceof GuiEditSign))		
 		{
-			Quatf controllerOrientationQuat;
+			Quaternion controllerOrientationQuat;
 			boolean appearOverBlock = (newScreen instanceof GuiCrafting)
 					|| (newScreen instanceof GuiChest)
 					|| (newScreen instanceof GuiShulkerBox)
@@ -466,13 +465,13 @@ public class GuiHandler {
 
 				guiPos_room = mc.vrPlayer.world_to_room_pos(guiPosWorld, mc.vrPlayer.vrdata_world_pre);	
 
-				Vector3f look = new Vector3f();
-				look.x = (float) (guiPos_room.x - pos.x);
-				look.y = (float) (guiPos_room.y - pos.y);
-				look.z = (float) (guiPos_room.z - pos.z);
+				Vector3 look = new Vector3();
+				look.setX((float) (guiPos_room.x - pos.x));
+				look.setY((float) (guiPos_room.y - pos.y));
+				look.setZ((float) (guiPos_room.z - pos.z));
 
-				float pitch = (float) Math.asin(look.y/look.length());
-				float yaw = (float) ((float) Math.PI + Math.atan2(look.x, look.z));    
+				float pitch = (float) Math.asin(look.getY()/look.length());
+				float yaw = (float) ((float) Math.PI + Math.atan2(look.getX(), look.getZ()));    
 				guiRotation_room = Matrix4f.rotationY((float) yaw);
 				Matrix4f tilt = OpenVRUtil.rotationXMatrix(pitch);	
 				guiRotation_room = Matrix4f.multiply(guiRotation_room,tilt);		
@@ -495,13 +494,13 @@ public class GuiHandler {
 						(e.z / 2 + v.z));
 
 				Vec3d pos = mc.vrPlayer.vrdata_room_pre.hmd.getPosition();
-				Vector3f look = new Vector3f();
-				look.x = (float) (guiPos_room.x - pos.x);
-				look.y = (float) (guiPos_room.y - pos.y);
-				look.z = (float) (guiPos_room.z - pos.z);
+				Vector3 look = new Vector3();
+				look.setX((float) (guiPos_room.x - pos.x));
+				look.setY((float) (guiPos_room.y - pos.y));
+				look.setZ((float) (guiPos_room.z - pos.z));
 
-				float pitch = (float) Math.asin(look.y/look.length());
-				float yaw = (float) ((float) Math.PI + Math.atan2(look.x, look.z));    
+				float pitch = (float) Math.asin(look.getY()/look.length());
+				float yaw = (float) ((float) Math.PI + Math.atan2(look.getX(), look.getZ()));    
 				guiRotation_room = Matrix4f.rotationY((float) yaw);
 				Matrix4f tilt = OpenVRUtil.rotationXMatrix(pitch);	
 				guiRotation_room = Matrix4f.multiply(guiRotation_room,tilt);		
@@ -521,7 +520,7 @@ public class GuiHandler {
 
   		if(mc.currentScreen != null && GuiHandler.guiPos_room == null){
   			//naughty mods!
-  			GuiHandler.onGuiScreenChanged(null, mc.currentScreen, false);			
+  			GuiHandler.onGuiScreenChanged(null, mc.currentScreen, false);
   		}
 
   		Vec3d guipos = GuiHandler.guiPos_room;
@@ -561,7 +560,7 @@ public class GuiHandler {
   							(v.z + d.z*mc.vrPlayer.vrdata_world_render.worldScale*mc.vrSettings.hudDistance));
 
 
-  					Quatf orientationQuat = OpenVRUtil.convertMatrix4ftoRotationQuat(max);
+  					Quaternion orientationQuat = OpenVRUtil.convertMatrix4ftoRotationQuat(max);
 
   					guirot = new Matrix4f(orientationQuat);
 
@@ -604,17 +603,17 @@ public class GuiHandler {
 
                     guipos = mc.entityRenderer.getControllerRenderPos(1);
 
-  					/*Vector3f forward = new Vector3f(0,0,1);
-  					Vector3f guiNormal = guirot.transform(forward);
+  					/*Vector3 forward = new Vector3(0,0,1);
+  					Vector3 guiNormal = guirot.transform(forward);
 
   					Vec3d facev = mc.vrPlayer.vrdata_world_render.hmd.getDirection();
-  					Vector3f face = new Vector3f((float)facev.x, (float)facev.y, (float)facev.z);
+  					Vector3 face = new Vector3((float)facev.x, (float)facev.y, (float)facev.z);
 
                     float dot = face.dot(guiNormal);
 
   					Vec3d head = mc.vrPlayer.vrdata_world_render.hmd.getPosition();
 
-  					Vector3f headv = new Vector3f((float)guipos.x, (float)guipos.y, (float)guipos.z).subtract(new Vector3f((float)head.x, (float)head.y, (float)head.z)).normalised();
+  					Vector3 headv = new Vector3((float)guipos.x, (float)guipos.y, (float)guipos.z).subtract(new Vector3((float)head.x, (float)head.y, (float)head.z)).normalised();
   					if(headv == null) return guipos;
   					float dot2 = (float) headv.dot(guiNormal);
 

@@ -17,6 +17,7 @@ public abstract class Tracker {
 	public abstract boolean isActive(EntityPlayerSP player);
 	public abstract void doProcess(EntityPlayerSP player);
 	public void reset(EntityPlayerSP player){}
+	public void idleTick(EntityPlayerSP player){}
 
 	public EntryPoint getEntryPoint(){return EntryPoint.LIVING_UPDATE;}
 

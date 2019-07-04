@@ -98,13 +98,13 @@
 +    	this.client.gameSettings.sendSettingsToServer();
 +    	this.netManager.sendPacket(new CPacketCustomPayload(CPacketCustomPayload.BRAND, (new PacketBuffer(Unpooled.buffer())).writeString(ClientBrandRetriever.getClientModName())));
 +    	// VIVE START - ask server if it's running this mod
-+    	this.client.vrPlayer.setFreeMove(true);
 +    	byte[] version = Minecraft.getMinecraft().minecriftVerString.getBytes(Charsets.UTF_8);
 +    	String s = NetworkHelper.channel.toString();
 +    	PacketBuffer pb = new PacketBuffer(Unpooled.buffer());
 +    	pb.writeBytes(s.getBytes());
 +    	this.netManager.sendPacket(new CPacketCustomPayload(new ResourceLocation("minecraft:register"), pb));
 +    	this.netManager.sendPacket(NetworkHelper.getVivecraftClientPacket(PacketDiscriminators.VERSION, version));
++        this.client.vrPlayer.teleportWarningTimer = 20 * 3;
 +    	// VIVE END - ask server if it's running this mod
      }
  
@@ -116,8 +116,8 @@
 -        this.netManager.closeChannel(packetIn.getReason());
 +    	this.netManager.closeChannel(packetIn.getReason());
 +    	// VIVE START - no longer on a vanilla server, reset restricted state
-+    	this.client.vrPlayer.noTeleportClient = true;
-+    	OpenVRPlayer.get().setFreeMove(true);
++    	this.client.vrPlayer.setTeleportSupported(false);
++        this.client.vrPlayer.setTeleportOverride(false);
 +    	// VIVE END - no longer on a vanilla server, reset restricted state  
      }
  
@@ -351,8 +351,8 @@
 +    				switch (dis){
 +    				case VERSION:
 +    					String v = packetbuffer.readString(1024);
-+    					this.client.vrPlayer.noTeleportClient = false;
-+    					this.client.vrPlayer.setFreeMove(Minecraft.getMinecraft().vrSettings.vrFreeMove);
++    					this.client.vrPlayer.setTeleportSupported(true);
++                        this.client.vrPlayer.teleportWarningTimer = -1;
 +    					this.client.printChatMessage("Vivecraft server mod detected: " +  v);
 +    					break;
 +    				case REQUESTDATA:

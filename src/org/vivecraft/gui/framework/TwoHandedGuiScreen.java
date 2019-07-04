@@ -21,10 +21,6 @@ public abstract class TwoHandedGuiScreen extends GuiScreen
 		{	
 			double d0 = Math.min(Math.max((int)cursorX2, 0), mc.mainWindow.getWidth())
 					 * (double)mc.mainWindow.getScaledWidth() / (double)mc.mainWindow.getWidth();
-			if( (int)d0 == mouseX)
-				MCOpenVR.triggerHapticPulse(ControllerType.RIGHT, 2000);
-			else 
-				MCOpenVR.triggerHapticPulse(ControllerType.LEFT, 2000);
 			return true;
 		}
 		return false;

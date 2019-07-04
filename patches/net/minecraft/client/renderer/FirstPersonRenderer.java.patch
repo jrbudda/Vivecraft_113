@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/FirstPersonRenderer.java
 +++ b/net/minecraft/client/renderer/FirstPersonRenderer.java
-@@ -1,7 +1,18 @@
+@@ -1,7 +1,19 @@
  package net.minecraft.client.renderer;
  
 -import com.google.common.base.MoreObjects;
@@ -9,6 +9,8 @@
  import java.util.Objects;
 +
 +import org.lwjgl.opengl.GL11;
++
++import org.vivecraft.control.ControllerType;
 +import org.vivecraft.gameplay.trackers.BowTracker;
 +import org.vivecraft.provider.MCOpenVR;
 +import org.vivecraft.render.RenderPass;
@@ -16,11 +18,10 @@
 +
 +import com.google.common.base.MoreObjects;
 +
-+import de.fruitfly.ovr.structs.Vector3f;
  import net.minecraft.block.Block;
  import net.minecraft.block.state.IBlockState;
  import net.minecraft.client.Minecraft;
-@@ -15,12 +26,25 @@
+@@ -15,12 +27,25 @@
  import net.minecraft.client.renderer.texture.TextureAtlasSprite;
  import net.minecraft.client.renderer.texture.TextureMap;
  import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -47,7 +48,7 @@
  import net.minecraft.src.Config;
  import net.minecraft.tags.FluidTags;
  import net.minecraft.util.BlockRenderLayer;
-@@ -28,8 +52,10 @@
+@@ -28,8 +53,10 @@
  import net.minecraft.util.EnumHand;
  import net.minecraft.util.EnumHandSide;
  import net.minecraft.util.ResourceLocation;
@@ -58,7 +59,7 @@
  import net.minecraft.world.storage.MapData;
  import net.optifine.DynamicLights;
  import net.optifine.reflect.Reflector;
-@@ -51,12 +77,22 @@
+@@ -51,12 +78,22 @@
      private float prevEquippedProgressOffHand;
      private final RenderManager renderManager;
      private final ItemRenderer itemRenderer;
@@ -82,7 +83,7 @@
      }
  
      public void renderItem(EntityLivingBase entityIn, ItemStack heldStack, ItemCameraTransforms.TransformType transform)
-@@ -101,7 +137,7 @@
+@@ -101,7 +138,7 @@
          GlStateManager.popMatrix();
      }
  
@@ -91,7 +92,7 @@
      {
          AbstractClientPlayer abstractclientplayer = this.mc.player;
          int i = this.mc.world.getCombinedLight(new BlockPos(abstractclientplayer.posX, abstractclientplayer.posY + (double)abstractclientplayer.getEyeHeight(), abstractclientplayer.posZ), 0);
-@@ -177,27 +213,18 @@
+@@ -177,27 +214,18 @@
      private void renderMapFirstPersonSide(float equippedProgress, EnumHandSide hand, float swingProgress, ItemStack stack)
      {
          float f = hand == EnumHandSide.RIGHT ? 1.0F : -1.0F;
@@ -130,7 +131,7 @@
          GlStateManager.popMatrix();
      }
  
-@@ -206,14 +233,20 @@
+@@ -206,14 +234,20 @@
          float f = MathHelper.sqrt(swingProgress);
          float f1 = -0.2F * MathHelper.sin(swingProgress * (float)Math.PI);
          float f2 = -0.4F * MathHelper.sin(f * (float)Math.PI);
@@ -157,7 +158,7 @@
          this.renderMapFirstPerson(this.itemStackMainHand);
      }
  
-@@ -248,6 +281,7 @@
+@@ -248,6 +282,7 @@
      {
          boolean flag = side != EnumHandSide.LEFT;
          float f = flag ? 1.0F : -1.0F;
@@ -165,7 +166,7 @@
          float f1 = MathHelper.sqrt(swingProgress);
          float f2 = -0.3F * MathHelper.sin(f1 * (float)Math.PI);
          float f3 = 0.4F * MathHelper.sin(f1 * ((float)Math.PI * 2F));
-@@ -258,25 +292,39 @@
+@@ -258,25 +293,39 @@
          float f6 = MathHelper.sin(f1 * (float)Math.PI);
          GlStateManager.rotatef(f * f6 * 70.0F, 0.0F, 1.0F, 0.0F);
          GlStateManager.rotatef(f * f5 * -20.0F, 0.0F, 0.0F, 1.0F);
@@ -217,7 +218,7 @@
          GlStateManager.enableCull();
      }
  
-@@ -288,32 +336,46 @@
+@@ -288,32 +337,46 @@
          if (f1 < 0.8F)
          {
              float f2 = MathHelper.abs(MathHelper.cos(f / 4.0F * (float)Math.PI) * 0.1F);
@@ -278,7 +279,7 @@
      }
  
      /**
-@@ -371,185 +433,409 @@
+@@ -371,185 +434,401 @@
          RenderHelper.disableStandardItemLighting();
      }
  
@@ -411,40 +412,33 @@
 +
 +    					Vec3d aim = mc.bowTracker.getAimVector(); 
 +    					Vec3d a = new Vec3d(aim.x, aim.y, aim.z);
-+    					//a.rotateAroundY(-mc.vrSettings.vrWorldRotation);
-+    					Vector3f aimCopy = new Vector3f((float)a.x,(float) a.y, (float)a.z);
-+
-+    					//Matrix4f left = mc.lookaimController.getAimRotation(1);
 +
 +    					Vec3d lup = mc.vrPlayer.vrdata_world_render.getController(1).getCustomVector(new Vec3d(0, -1, 0));
-+    					Vector3f current = new Vector3f((float)lup.x, (float)lup.y, (float)lup.z);
 +    					Vec3d lback = mc.vrPlayer.vrdata_world_render.getController(1).getCustomVector(new Vec3d(0, 0, -1));
 +
-+    					Vector3f currentfore =  new Vector3f((float)lback.x, (float)lback.y, (float)lback.z);
++    					Vec3d v = a.crossProduct(lup);
++    					double d = 180 / Math.PI * Math.acos(a.dotProduct(lup));
 +
-+    					Vector3f v = aimCopy.cross(current);
-+    					double d = 180 / Math.PI * Math.acos(aimCopy.dot(current));
++    					float aimpitch = (float)Math.toDegrees(Math.asin(a.y/a.length()));
++    					float yaw = (float)Math.toDegrees(Math.atan2(a.x, a.z));     
 +
-+    					float aimpitch = (float)Math.toDegrees(Math.asin(aimCopy.y/aimCopy.length()));
-+    					float yaw = (float)Math.toDegrees(Math.atan2(aimCopy.x, aimCopy.z));     
++    					Vec3d up = new Vec3d(0,1,0);
 +
-+    					Vector3f up = new Vector3f(0,1,0);
++    					Vec3d ahz = new Vec3d(a.x, 0, a.z); // we want the normal to a aiming plane, but vertical.
++    					Vec3d pAim2 = Vec3d.ZERO;
 +
-+    					Vector3f pAim2 = new Vector3f(0,0,0);
-+
-+    					aimCopy.y = 0 ; // we want the normal to a aiming plane, but vertical.
-+
-+    					float porjaim = currentfore.dot(aimCopy); //angle between controller up and aim, just for ortho check			    		        		
++    					double porjaim = lback.dotProduct(ahz); //angle between controller up and aim, just for ortho check			    		        		
 +    					if(porjaim !=0) { //check to make sure 	we arent holding the bow perfectly straight up.					
-+    						pAim2 = aimCopy.divide(1/porjaim);	 //projection of l_controller_up onto aim vector ... why is there no multiply?		        	 
++    						pAim2 = ahz.scale(porjaim);	 //projection of l_controller_up onto aim vector ... why is there no multiply?		        	 
 +    					}
 +
-+    					float dot =0;
-+    					Vector3f proj = currentfore.subtract(pAim2).normalised(); //subtract to get projection of LCU onto vertical aim plane   
++    					double dot =0;
 +
-+    					dot = proj.dot(up);		//angle between our projection and straight up (the default bow render pos.)
++    					Vec3d proj = lback.subtract(pAim2).normalize();
 +
-+    					float dot2 = aimCopy.dot(proj.cross(up)); //angle sign test, negative is left roll
++    					dot = proj.dotProduct(up);		//angle between our projection and straight up (the default bow render pos.)
++
++    					double dot2 = ahz.dotProduct(proj.crossProduct(up)); //angle sign test, negative is left roll
 +
 +    					float angle;
 +
@@ -676,8 +670,7 @@
 +    				GlStateManager.translatef(-.025f, .12f, .25f);
 +    				GlStateManager.rotatef(90, 0, 0, 1);	
 +
-+    				if((mc.gameSettings.keyBindAttack.isKeyDown() && rightSide) ||
-+    						((mc.climbTracker.isGrabbingLadder() || !mc.player.onGround) && mc.gameSettings.keyBindForward.isKeyDown() && !rightSide)) {
++    				if((MCOpenVR.keyClimbeyGrab.isKeyDown(ControllerType.RIGHT) && rightSide) || (MCOpenVR.keyClimbeyGrab.isKeyDown(ControllerType.LEFT) && !rightSide)) {
 +    					GlStateManager.translatef(0f, 0f, -.2f);	
 +    				}
 +    			}
@@ -836,7 +829,7 @@
                  this.renderFireInFirstPerson();
              }
          }
-@@ -631,13 +917,13 @@
+@@ -631,13 +910,13 @@
          Tessellator tessellator = Tessellator.getInstance();
          BufferBuilder bufferbuilder = tessellator.getBuffer();
          GlStateManager.color4f(1.0F, 1.0F, 1.0F, 0.9F);
@@ -853,7 +846,7 @@
          {
              GlStateManager.pushMatrix();
              TextureAtlasSprite textureatlassprite = this.mc.getTextureMap().getSprite(ModelBakery.LOCATION_FIRE_1);
-@@ -646,19 +932,20 @@
+@@ -646,19 +925,20 @@
              float f2 = textureatlassprite.getMaxU();
              float f3 = textureatlassprite.getMinV();
              float f4 = textureatlassprite.getMaxV();
@@ -885,7 +878,7 @@
              tessellator.draw();
              GlStateManager.popMatrix();
          }
-@@ -743,4 +1030,130 @@
+@@ -743,4 +1023,130 @@
              this.equippedProgressOffHand = 0.0F;
          }
      }

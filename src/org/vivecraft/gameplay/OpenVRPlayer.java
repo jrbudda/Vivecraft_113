@@ -6,7 +6,6 @@ import java.util.Random;
 import org.vivecraft.api.NetworkHelper;
 import org.vivecraft.api.NetworkHelper.PacketDiscriminators;
 import org.vivecraft.api.VRData;
-import org.vivecraft.control.VRButtonMapping;
 import org.vivecraft.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.gameplay.screenhandlers.KeyboardHandler;
 import org.vivecraft.gameplay.screenhandlers.RadialHandler;
@@ -79,10 +78,12 @@ public class OpenVRPlayer
 	}
 
 	public float worldScale =  Minecraft.getMinecraft().vrSettings.vrWorldScale;
-	public boolean noTeleportClient = true;
+	private boolean noTeleportClient = true;
+	private boolean teleportOverride = false;
+	public int teleportWarningTimer = -1;
 
 	public Vec3d roomOrigin = new Vec3d(0,0,0);
-	private boolean isFreeMoveCurrent = true; // true when connected to another server that doesn't have this mod
+	private boolean isFreeMoveCurrent = true; // based on a heuristic of which locomotion type was last used
 
 	//for overriding the world scale settings with wonder foods.
 	public double wfMode = 0;
@@ -142,7 +143,7 @@ public class OpenVRPlayer
 		if(mc.vrSettings.seated && !mc.entityRenderer.isInMenuRoom())
 			mc.vrSettings.vrWorldRotation = MCOpenVR.seatedRot;
 	
-		//Vivecraft - setup the player entity with the correct view for the logic tick.
+		//setup the player entity with the correct view for the logic tick.
 		doLookOverride(vrdata_world_pre);
 		////
 
@@ -202,6 +203,7 @@ public class OpenVRPlayer
 		//handle special items
 		for (Tracker tracker : trackers) {
 			if (tracker.getEntryPoint() == Tracker.EntryPoint.SPECIAL_ITEMS) {
+				tracker.idleTick(mc.player);
 				if (tracker.isActive(mc.player)){
 					tracker.doProcess(mc.player);
 				}else{
@@ -317,6 +319,7 @@ public class OpenVRPlayer
 
 		for (Tracker tracker : trackers) {
 			if (tracker.getEntryPoint() == Tracker.EntryPoint.LIVING_UPDATE) {
+				tracker.idleTick(mc.player);
 				if (tracker.isActive(mc.player)){
 					tracker.doProcess(mc.player);
 				}else{
@@ -532,33 +535,24 @@ public class OpenVRPlayer
 		}
 	}
 
+	public void updateFreeMove() {
+		if (mc.teleportTracker.isAiming())
+			isFreeMoveCurrent = false;
+		if (mc.player.movementInput.moveForward != 0 || mc.player.movementInput.moveStrafe != 0)
+			isFreeMoveCurrent = true;
+		updateTeleportKeys();
+	}
 
-
-	public boolean getFreeMove() { return isFreeMoveCurrent; }
-
-	public void setFreeMove(boolean free) { 
-		boolean was = isFreeMoveCurrent;
-		isFreeMoveCurrent = free;
-
-		if(free != was){
-			CPacketCustomPayload pack =	NetworkHelper.getVivecraftClientPacket(PacketDiscriminators.MOVEMODE, isFreeMoveCurrent ?  new byte[]{1} : new byte[]{0});
-
-			if(Minecraft.getMinecraft().getConnection() !=null)
-				Minecraft.getMinecraft().getConnection().sendPacket(pack);
-
-			if(Minecraft.getMinecraft().vrSettings.seated){
-				Minecraft.getMinecraft().printChatMessage("Movement mode set to: " + (free ? "Free Move: WASD": "Teleport: W"));
-
-			} else {
-				Minecraft.getMinecraft().printChatMessage("Movement mode set to: " + (free ? Minecraft.getMinecraft().vrSettings.getButtonDisplayString(VRSettings.VrOptions.FREEMOVE_MODE): "Teleport"));
-
-			}
-
-			if(noTeleportClient && !free){
-				Minecraft.getMinecraft().printChatMessage("Warning: This server may not allow teleporting.");
-			}
-
-		}
+	/**
+	 * Again with the weird logic, see {@link #isTeleportEnabled()}
+	 *
+	 * @return
+	 */
+	public boolean getFreeMove() {
+		if (mc.vrSettings.seated)
+			return mc.vrSettings.seatedFreeMove || !isTeleportEnabled();
+		else
+			return isFreeMoveCurrent || mc.vrSettings.forceStandingFreeMove;
 	}
 
 
@@ -700,5 +694,43 @@ public class OpenVRPlayer
         Vec3d vec3d2 = AimedPointAtDistance(source, controller, blockReachDistance);
         return mc.world.rayTraceBlocks(vec3d, vec3d2, p_174822_4_, false, true);
     }
+
+	public boolean isTeleportSupported() {
+		return !noTeleportClient;
+	}
+
+	public boolean isTeleportOverridden() {
+		return teleportOverride;
+	}
+
+	/**
+	 * The logic here is a bit weird, because teleport is actually still enabled even in
+	 * seated free move mode. You could use it by simply binding it in the vanilla controls.
+	 * However, when free move is forced in standing mode, teleport is outright disabled.
+	 *
+	 * @return
+	 */
+	public boolean isTeleportEnabled() {
+		boolean enabled = !noTeleportClient || teleportOverride;
+		if (!mc.vrSettings.seated)
+			return enabled && !mc.vrSettings.forceStandingFreeMove;
+		else
+			return enabled;
+	}
+
+	public void setTeleportSupported(boolean supported) {
+		noTeleportClient = !supported;
+		updateTeleportKeys();
+	}
+
+	public void setTeleportOverride(boolean override) {
+		teleportOverride = override;
+		updateTeleportKeys();
+	}
+
+    private void updateTeleportKeys() {
+		MCOpenVR.getInputAction(MCOpenVR.keyTeleport).setEnabled(isTeleportEnabled());
+		MCOpenVR.getInputAction(MCOpenVR.keyTeleportFallback).setEnabled(!isTeleportEnabled());
+	}
 }
 

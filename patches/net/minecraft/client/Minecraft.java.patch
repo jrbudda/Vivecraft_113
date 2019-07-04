@@ -59,7 +59,7 @@
 +import org.lwjgl.opengl.GL13;
 +import org.lwjgl.opengl.GL30;
 +import org.vivecraft.api.ErrorHelper;
-+import org.vivecraft.control.VRButtonMapping;
++import org.vivecraft.control.VRInputAction;
 +import org.vivecraft.gameplay.OpenVRPlayer;
 +import org.vivecraft.gameplay.screenhandlers.GuiHandler;
 +import org.vivecraft.gameplay.screenhandlers.KeyboardHandler;
@@ -220,7 +220,7 @@
 +	 * The minecriftVerString will be automatically updated by the build scripts, do not modify here.
 +	 * Modify minecriftversion.py in root minecrift dir.
 +	 */
-+    public final String minecriftVerString = "Vivecraft 1.13.2 jrbudda-2-r3";
++    public final String minecriftVerString = "Vivecraft 1.13.2 jrbudda-3-b0";
 +	/* end version */
 +	/** END MINECRIFT */
 +    
@@ -390,8 +390,8 @@
 +
 +		//VIVE
 +        //this.renderGlobal.makeEntityOutlineShader();
-+        vrSettings.processBindings();
-+        
++		LangHelper.registerResourceListener();
++        MCOpenVR.initInputAndApplication();
 +
 +		vrSettings.firstRun = false;
 +		vrSettings.saveOptions();
@@ -954,41 +954,48 @@
  
          if (this.currentScreen == null && this.player != null)
          {
-@@ -1494,7 +1941,13 @@
+@@ -1494,7 +1941,12 @@
                  this.currentScreen.tick();
              }, "Ticking screen", this.currentScreen.getClass().getCanonicalName());
          }
 -
 +        
 +        //Vivecraft
-+        this.profiler.endStartSection("vrProcessInputs");
-+        MCOpenVR.processInputs();
++        this.profiler.endStartSection("vrProcessBindings");
 +        MCOpenVR.processBindings();
 +        ///
 +        
          if (this.currentScreen == null || this.currentScreen.allowUserInput)
          {
              this.profiler.endStartSection("GLFW events");
-@@ -1506,6 +1959,18 @@
+@@ -1506,6 +1958,15 @@
                  --this.leftClickCounter;
              }
          }
 +        
 +        //Vivecraft
-+        this.profiler.endStartSection("vrButtonMappingsTick");
-+        for (VRButtonMapping mapping : this.vrSettings.buttonMappings.values()) {
-+        	mapping.tick();
-+        }   
-+
-+        this.profiler.endStartSection("vrPostProcessInputs");
-+        MCOpenVR.postProcessBindings();
++		this.profiler.endStartSection("vrInputActionsTick");
++		for (VRInputAction action : MCOpenVR.getInputActions()) {
++			action.tick();
++		}
 +
 +		if (vrSettings.displayMirrorMode == VRSettings.MIRROR_MIXED_REALITY || vrSettings.displayMirrorMode == VRSettings.MIRROR_THIRD_PERSON)
 +			VRHotkeys.handleMRKeys();
  
          if (this.world != null)
          {
-@@ -1521,7 +1986,7 @@
+@@ -1518,10 +1979,18 @@
+                     this.joinPlayerCounter = 0;
+                     this.world.joinEntityInSurroundings(this.player);
+                 }
++
++                // Vivecraft
++                this.vrPlayer.updateFreeMove();
++                if (this.vrPlayer.teleportWarningTimer >= 0) {
++					if (--this.vrPlayer.teleportWarningTimer == 0) {
++						printChatMessage("This server does not support teleporting. Restricted movement mode (fallback to free move) has been enabled.");
++					}
++				}
              }
  
              this.profiler.endStartSection("gameRenderer");
@@ -997,7 +1004,7 @@
              if (!this.isGamePaused)
              {
                  this.entityRenderer.tick();
-@@ -1550,7 +2015,13 @@
+@@ -1550,7 +2019,13 @@
          {
              this.entityRenderer.stopUseShader();
          }
@@ -1012,7 +1019,7 @@
          if (!this.isGamePaused)
          {
              this.musicTicker.tick();
-@@ -1618,6 +2089,13 @@
+@@ -1618,6 +2093,13 @@
      {
          for (; this.gameSettings.keyBindTogglePerspective.isPressed(); this.renderGlobal.setDisplayListEntitiesDirty())
          {
@@ -1026,7 +1033,7 @@
              ++this.gameSettings.thirdPersonView;
  
              if (this.gameSettings.thirdPersonView > 2)
-@@ -1633,6 +2111,7 @@
+@@ -1633,6 +2115,7 @@
              {
                  this.entityRenderer.loadEntityShader((Entity)null);
              }
@@ -1034,7 +1041,7 @@
          }
  
          while (this.gameSettings.keyBindSmoothCamera.isPressed())
-@@ -1700,22 +2179,34 @@
+@@ -1700,22 +2183,23 @@
  
          if (flag2)
          {
@@ -1047,29 +1054,17 @@
 -            {
 -                this.displayGuiScreen(new GuiChat("/"));
 -            }
--        }
--
-+        	//Vivecraft allow toggling chat window with chat keybind
-+        	if(this.currentScreen instanceof GuiChat){
-+        		while (this.gameSettings.keyBindChat.isPressed())
-+        		{
-+        			this.displayGuiScreen(null);
-+        		}
-+        	} else {
-+        		while (this.gameSettings.keyBindChat.isPressed())
-+        		{
-+        			this.displayGuiScreen(new GuiChat());
-+        		}
-+        	}
++			if (this.currentScreen == null && this.gameSettings.keyBindChat.isPressed())
++			{
++				this.displayGuiScreen(new GuiChat());
++			}
 +        	
 +        	if (this.currentScreen == null && this.gameSettings.keyBindCommand.isPressed())
 +        	{
 +        		this.displayGuiScreen(new GuiChat("/"));
 +        	}
-+        }
-+        
-+       	boolean nope = false;
-+        if(climbTracker.isClimbeyClimb() && (this.objectMouseOver==null || this.objectMouseOver.entity==null)) nope = true;
+         }
+-
 +        
          if (this.player.isHandActive())
          {
@@ -1082,7 +1077,7 @@
              }
  
              label109:
-@@ -1741,13 +2232,23 @@
+@@ -1741,13 +2225,23 @@
                  }
              }
          }
@@ -1095,7 +1090,7 @@
 -            }
 -
 +        	//VIVE SUPPORT HAND SWINGING
-+        	if (this.gameSettings.keyBindAttack.isPressed() && currentScreen == null && !nope)
++        	if (this.gameSettings.keyBindAttack.isPressed() && currentScreen == null)
 +        	{
 +        		this.clickMouse();
 +        		lastClick = true;
@@ -1112,16 +1107,16 @@
              while (this.gameSettings.keyBindUseItem.isPressed())
              {
                  this.rightClickMouse();
-@@ -1764,7 +2265,7 @@
+@@ -1764,7 +2258,7 @@
              this.rightClickMouse();
          }
  
 -        this.sendClickBlockToController(this.currentScreen == null && this.gameSettings.keyBindAttack.isKeyDown() && this.mouseHelper.isMouseGrabbed());
-+        if(!(!(nope==false))) this.sendClickBlockToController(this.currentScreen == null && this.gameSettings.keyBindAttack.isKeyDown());
++        this.sendClickBlockToController(this.currentScreen == null && this.gameSettings.keyBindAttack.isKeyDown());
      }
  
      /**
-@@ -1870,6 +2371,10 @@
+@@ -1870,6 +2364,10 @@
       */
      public void loadWorld(@Nullable WorldClient worldClientIn)
      {
@@ -1132,7 +1127,7 @@
          GuiScreenWorking guiscreenworking = new GuiScreenWorking();
  
          if (worldClientIn != null)
-@@ -1896,6 +2401,8 @@
+@@ -1896,6 +2394,8 @@
              this.entityRenderer.resetData();
              this.playerController = null;
              NarratorChatListener.INSTANCE.clear();
@@ -1141,7 +1136,7 @@
          }
  
          this.musicTicker.stopMusic();
-@@ -1950,6 +2457,8 @@
+@@ -1950,6 +2450,8 @@
                      this.integratedServer.setPlayerUuid(this.player.getUniqueID());
                  }
              }
@@ -1150,7 +1145,7 @@
  
              this.player.preparePlayerToSpawn();
              worldIn.spawnEntity(this.player);
-@@ -1998,6 +2507,8 @@
+@@ -1998,6 +2500,8 @@
          {
              this.displayGuiScreen((GuiScreen)null);
          }
@@ -1159,7 +1154,7 @@
      }
  
      /**
-@@ -2726,4 +3237,645 @@
+@@ -2726,4 +3230,645 @@
      {
          return this.fontResourceMananger;
      }
@@ -1184,7 +1179,7 @@
 +
 +		Object temp;
 +		if(MCOpenVR.mrMovingCamActive){
-+			de.fruitfly.ovr.structs.Matrix4f temp2 = MCOpenVR.getAimRotation(2);
++			org.vivecraft.utils.Matrix4f temp2 = MCOpenVR.getAimRotation(2);
 +			conrot = temp2.inverted().toFloatBuffer();
 +		}else {
 +			//reconstruct from vrsettings		
