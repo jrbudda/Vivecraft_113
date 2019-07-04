@@ -929,7 +929,7 @@
          renderglobal.renderWorldBorder(entity, partialTicks);
 +        this.mc.profiler.endStartSection("VR");
 +    	this.enableLightmap();
-+
+ 
 +        boolean forgeHands = false;
 +
 +        boolean correctTranslucentGui = !Config.isShaders();// jrbudda: I think I prefer it [false]. Water doesnt render 'thru' the hud or hands, but they both interact with water always.
@@ -938,14 +938,14 @@
 +        //Shaders.isItemToRenderMainTranslucent() ||
 +        			//Shaders.isItemToRenderOffTranslucent() || mc.getItemRenderer().getFade() < 1;
 +
-+        if (shouldRenderHands())
-+            renderVRHands(!correctTranslucentGui, partialTicks);
- 
 +        if(!correctTranslucentGui) {
 +            if (flag)
 +                Shaders.useProgram(Shaders.ProgramHandWater);
 +            renderVRLit(correctTranslucentGui, partialTicks);
 +        }
++
++        if (shouldRenderHands())
++            renderVRHands(!correctTranslucentGui, partialTicks);
 +        
          if (flag)
          {
@@ -965,8 +965,6 @@
 +
 +        this.mc.profiler.startSection("hud");
 +
-+        disableLightmap();
-+
 +		if(correctTranslucentGui) {
 +		    if (flag)
 +                Shaders.useProgram(Shaders.ProgramHandWater);
@@ -979,6 +977,8 @@
 +        {
 +            this.renderVRMisc(partialTicks);
 +        }
++
++        this.disableLightmap();
 +
 +        this.mc.profiler.endSection();
 +
@@ -1012,7 +1012,7 @@
              {
                  ShadersRender.renderHand1(this, partialTicks);
                  Shaders.renderCompositeFinal();
-@@ -1547,13 +1918,113 @@
+@@ -1547,13 +1918,115 @@
                  this.renderHand(partialTicks);
              }
          }
@@ -1033,8 +1033,10 @@
 +    	renderVRGuiElements(translucent, partialTicks);
 +
 +    	if (translucent) {
-+            if (!this.shouldOccludeGui() && shouldRenderHands())
++            if (!this.shouldOccludeGui() && shouldRenderHands()) {
++                this.enableLightmap();
 +                renderVRHands(translucent, partialTicks);
++            }
 +
 +            this.mc.profiler.startSection("extra_translucent_pass");
 +
@@ -1127,7 +1129,7 @@
      private void renderCloudsCheck(RenderGlobal renderGlobalIn, float partialTicks, double viewEntityX, double viewEntityY, double viewEntityZ)
      {
          if (this.mc.gameSettings.shouldRenderClouds() != 0 && !Config.isCloudsOff() && Shaders.shouldRenderClouds(this.mc.gameSettings))
-@@ -1561,7 +2032,11 @@
+@@ -1561,7 +2034,11 @@
              this.mc.profiler.endStartSection("clouds");
              GlStateManager.matrixMode(5889);
              GlStateManager.loadIdentity();
@@ -1140,7 +1142,7 @@
              GlStateManager.matrixMode(5888);
              GlStateManager.pushMatrix();
              this.fogRenderer.setupFog(0, partialTicks);
-@@ -1570,7 +2045,11 @@
+@@ -1570,7 +2047,11 @@
              GlStateManager.popMatrix();
              GlStateManager.matrixMode(5889);
              GlStateManager.loadIdentity();
@@ -1153,7 +1155,7 @@
              GlStateManager.matrixMode(5888);
          }
      }
-@@ -2002,7 +2481,7 @@
+@@ -2002,7 +2483,7 @@
              this.updatedWorld = world;
          }
  
@@ -1162,7 +1164,7 @@
          {
              Shaders.configAntialiasingLevel = 0;
          }
-@@ -2242,36 +2721,29 @@
+@@ -2242,36 +2723,29 @@
      }
  
      private void renderItemActivation(int widthsp, int heightScaled, float partialTicks)
@@ -1222,7 +1224,7 @@
      }
  
      public Minecraft getMinecraft()
-@@ -2288,4 +2760,2044 @@
+@@ -2288,4 +2762,2044 @@
      {
          return this.farPlaneDistance;
      }

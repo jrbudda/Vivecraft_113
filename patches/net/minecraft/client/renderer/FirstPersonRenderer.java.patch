@@ -353,7 +353,7 @@
 +    			rendertype = VivecraftItemRendering.Block;
 +    		else if(item instanceof ItemMap)
 +    			rendertype = VivecraftItemRendering.Map;
-+    		else if (BowTracker.isBow(stack))
++    		else if (stack.getUseAction() == EnumAction.BOW)
 +    			rendertype = VivecraftItemRendering.Bow;
 +    		else if(item instanceof ItemSword)
 +    			rendertype = VivecraftItemRendering.Sword;
