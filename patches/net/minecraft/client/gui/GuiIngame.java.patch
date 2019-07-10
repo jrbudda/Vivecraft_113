@@ -19,7 +19,7 @@
  import net.minecraft.client.renderer.ItemRenderer;
  import net.minecraft.client.renderer.OpenGlHelper;
  import net.minecraft.client.renderer.RenderHelper;
-@@ -68,128 +73,135 @@
+@@ -68,128 +73,138 @@
  
  public class GuiIngame extends Gui
  {
@@ -207,6 +207,9 @@
 +	private int scaledHeight;
 +	private final Map<ChatType, List<IChatListener>> chatListeners = Maps.<ChatType, List<IChatListener>>newHashMap();
 +
++	// Vivecraft
++	public boolean showPlayerList;
++
 +	public GuiIngame(Minecraft mcIn)
 +	{
 +		this.mc = mcIn;
@@ -276,7 +279,7 @@
          if (!this.mc.player.isPotionActive(MobEffects.NAUSEA))
          {
              float f = this.mc.player.prevTimeInPortal + (this.mc.player.timeInPortal - this.mc.player.prevTimeInPortal) * partialTicks;
-@@ -199,1302 +211,1395 @@
+@@ -199,1302 +214,1395 @@
                  this.renderPortal(f);
              }
          }

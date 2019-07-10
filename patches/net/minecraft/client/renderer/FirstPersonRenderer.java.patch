@@ -279,7 +279,7 @@
      }
  
      /**
-@@ -371,185 +434,401 @@
+@@ -371,185 +434,403 @@
          RenderHelper.disableStandardItemLighting();
      }
  
@@ -663,8 +663,10 @@
 +    			}
 +    			break;
 +    		case Tool:
++
++    			boolean climbClaws = mc.climbTracker.isClaws(stack) && mc.climbTracker.isClimbeyClimb();
 +    			
-+    			if(mc.climbTracker.isClaws(stack) && mc.climbTracker.isClimbeyClimb()){
++    			if(climbClaws){
 +
 +    				GlStateManager.scaled(0.3, 0.3, 0.3);
 +    				GlStateManager.translatef(-.025f, .12f, .25f);
@@ -675,7 +677,7 @@
 +    				}
 +    			}
 +
-+    			if(vive || item instanceof ItemArrow){
++    			if(vive || climbClaws){
 +    				GlStateManager.translatef(0f, -.025f, -0.1f);		
 +    				GlStateManager.scaled(0.6, 0.6, 0.6);	
 +
@@ -829,7 +831,7 @@
                  this.renderFireInFirstPerson();
              }
          }
-@@ -631,13 +910,13 @@
+@@ -631,13 +912,13 @@
          Tessellator tessellator = Tessellator.getInstance();
          BufferBuilder bufferbuilder = tessellator.getBuffer();
          GlStateManager.color4f(1.0F, 1.0F, 1.0F, 0.9F);
@@ -846,7 +848,7 @@
          {
              GlStateManager.pushMatrix();
              TextureAtlasSprite textureatlassprite = this.mc.getTextureMap().getSprite(ModelBakery.LOCATION_FIRE_1);
-@@ -646,19 +925,20 @@
+@@ -646,19 +927,20 @@
              float f2 = textureatlassprite.getMaxU();
              float f3 = textureatlassprite.getMinV();
              float f4 = textureatlassprite.getMaxV();
@@ -878,7 +880,7 @@
              tessellator.draw();
              GlStateManager.popMatrix();
          }
-@@ -743,4 +1023,130 @@
+@@ -743,4 +1025,130 @@
              this.equippedProgressOffHand = 0.0F;
          }
      }

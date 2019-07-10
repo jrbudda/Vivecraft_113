@@ -523,7 +523,7 @@
 +    	
 +    	if(mc.currentPass == RenderPass.LEFT) { //Vivecraft once per pass
 +    		this.frameInit();
-+
++    		setupClipPlanes();
 +    		if (!always_true && !this.mc.isGameFocused() && this.mc.gameSettings.pauseOnLostFocus && (!this.mc.gameSettings.touchscreen || !this.mc.mouseHelper.isRightDown()))
 +    		{//never pause on focus loss.
 +    			if (Util.milliTime() - this.prevFrameTime > 500L)
@@ -539,7 +539,7 @@
  
          if (!this.mc.skipRenderWorld)
          {
-@@ -939,13 +1167,17 @@
+@@ -939,11 +1167,15 @@
              if (renderWorldIn && this.mc.world != null)
              {
                  this.mc.profiler.startSection("level");
@@ -554,11 +554,8 @@
 +                
 +                this.renderWorld(partialTicks, Long.MAX_VALUE);
  
--                if (this.mc.isSingleplayer() && this.timeWorldIcon < Util.milliTime() - 1000L)
-+                if (mc.currentPass == RenderPass.THIRD && this.mc.isSingleplayer() && this.timeWorldIcon < Util.milliTime() - 1000L)
+                 if (this.mc.isSingleplayer() && this.timeWorldIcon < Util.milliTime() - 1000L)
                  {
-                     this.timeWorldIcon = Util.milliTime();
- 
 @@ -971,10 +1203,11 @@
                      this.mc.getFramebuffer().bindFramebuffer(true);
                  }
@@ -941,7 +938,7 @@
 +        }
 +
 +        if (shouldRenderHands())
-+            renderVRHands(!correctTranslucentGui, partialTicks);
++            renderVRHands(false, partialTicks);
 +        
          if (flag)
          {
@@ -1025,13 +1022,13 @@
 +
 +    }
 +
-+    private void renderVRLit(boolean translucent, float partialTicks) {
-+    	renderVRGuiElements(translucent, partialTicks);
++    private void renderVRLit(boolean translucentSecondPass, float partialTicks) {
++    	renderVRGuiElements(translucentSecondPass, partialTicks);
 +
-+    	if (translucent) {
++    	if (translucentSecondPass) {
 +            if (!this.shouldOccludeGui() && shouldRenderHands()) {
 +                this.enableLightmap();
-+                renderVRHands(translucent, partialTicks);
++                renderVRHands(true, partialTicks);
 +            }
 +
 +            this.mc.profiler.startSection("extra_translucent_pass");
@@ -1056,7 +1053,7 @@
 +        }
      }
  
-+    private void renderVRHands(boolean translucent, float partialTicks) {
++    private void renderVRHands(boolean translucentSecondPass, float partialTicks) {
 +        this.mc.profiler.startSection("hands");
 +
 +        RenderHelper.enableStandardItemLighting();
@@ -1068,7 +1065,7 @@
 +            renderMainMenuHands();
 +        } else {
 +            this.renderVRHand_Main(partialTicks);
-+            this.renderVRHand_Offhand(partialTicks, !translucent);
++            this.renderVRHand_Offhand(partialTicks, !translucentSecondPass);
 +        }
 +
 +        //

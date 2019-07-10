@@ -122,7 +122,18 @@
      }
  
      /**
-@@ -1329,7 +1358,7 @@
+@@ -1121,7 +1150,9 @@
+ 
+                     if (entity1 == this.client.player && !flag)
+                     {
+-                        this.client.ingameGUI.setOverlayMessage(I18n.format("mount.onboard", this.client.gameSettings.keyBindSneak.func_197978_k()), false);
++                    	//Vivecraft
++                        this.client.ingameGUI.setOverlayMessage(I18n.format("mount.onboard", this.client.gameSettings.keyBindSneak.getKeyDescription()), false);
++                        //
+                     }
+                 }
+             }
+@@ -1329,7 +1360,7 @@
      {
          PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.client);
          Container container = null;
@@ -131,7 +142,7 @@
  
          if (packetIn.getWindowId() == 0)
          {
-@@ -1344,7 +1373,10 @@
+@@ -1344,7 +1375,10 @@
          {
              this.sendPacket(new CPacketConfirmTransaction(packetIn.getWindowId(), packetIn.getActionNumber(), true));
          }
@@ -143,7 +154,7 @@
  
      /**
       * Handles the placement of a specified ItemStack in a specified container/inventory slot
-@@ -2144,110 +2176,165 @@
+@@ -2144,110 +2178,165 @@
       */
      public void handleCustomPayload(SPacketCustomPayload packetIn)
      {
@@ -411,7 +422,7 @@
      /**
       * May create a scoreboard objective, remove an objective from the scoreboard or update an objectives' displayname
       */
-@@ -2553,4 +2640,15 @@
+@@ -2553,4 +2642,15 @@
      {
          return this.nbtQueryManager;
      }

@@ -1,5 +1,6 @@
 package org.vivecraft.render;
 
+import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.util.Collection;
 import java.util.HashSet;
@@ -8,6 +9,8 @@ import java.util.Set;
 
 import org.vivecraft.utils.FakeBlockAccess;
 import org.vivecraft.utils.MCReflection;
+import org.vivecraft.utils.MenuWorldDownloader;
+import org.vivecraft.utils.MenuWorldExporter;
 
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.block.BlockLeaves;
@@ -82,7 +85,6 @@ public class MenuWorldRenderer {
 	public MenuFogRenderer fogRenderer;
 	public Set<TextureAtlasSprite> visibleTextures = new HashSet<>();
 	private Random rand;
-	private boolean init;
 	private boolean ready;
 
 	public MenuWorldRenderer() {
@@ -96,6 +98,34 @@ public class MenuWorldRenderer {
 		this.fogRenderer = new MenuFogRenderer(this);
 		this.rand = new Random();
 		this.rand.nextInt(); // toss some bits in the bin
+	}
+
+	public void init() {
+		try {
+			InputStream inputStream = MenuWorldDownloader.getRandomWorld();
+			if (inputStream != null) {
+				System.out.println("Initializing main menu world renderer...");
+				loadRenderers();
+				System.out.println("Loading world data...");
+				setWorld(MenuWorldExporter.loadWorld(inputStream));
+				System.out.println("Building geometry...");
+				prepare();
+				mc.entityRenderer.menuWorldFastTime = new Random().nextInt(10) == 0;
+			} else {
+				System.out.println("Failed to load any main menu world, falling back to old menu room");
+			}
+		}
+		catch (Exception e) {
+			System.out.println("Exception thrown when loading main menu world, falling back to old menu room");
+			e.printStackTrace();
+			destroy();
+			setWorld(null);
+		}
+		catch (OutOfMemoryError e) { // Only effective way of preventing crash on poop computers with low heap size
+			System.out.println("OutOfMemoryError while loading main menu world. Low heap size or 32-bit Java?");
+			destroy();
+			setWorld(null);
+		}
 	}
 
 	public void render() {

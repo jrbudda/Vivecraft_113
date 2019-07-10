@@ -357,7 +357,6 @@ public class OpenVRPlayer
 			}		
 		}
 
-		mc.profiler.endSection();
 	}
 
 	public void doPlayerMoveInRoom(EntityPlayerSP player){
