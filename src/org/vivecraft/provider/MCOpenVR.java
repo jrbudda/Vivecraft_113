@@ -477,7 +477,7 @@ public class MCOpenVR
 				System.out.println("Application manifest already installed");
 			} else {
 				// 0 = Permanent manifest which will show up in the library
-				// 1 = Temporary manifest which will only show up in bindings while running
+				// 1 = Temporary manifest which will only show up in bindings until SteamVR is restarted
 				int error = vrApplications.AddApplicationManifest.apply(ptrFomrString(file.getAbsolutePath()), (byte)1);
 				if (error != 0) {
 					System.out.println("Failed to install application manifest: " + vrApplications.GetApplicationsErrorNameFromEnum.apply(error).getString(0));
@@ -1283,14 +1283,22 @@ public class MCOpenVR
 				TrackpadSwipeSampler sampler = trackpadSwipeSamplers.get(keyBinding.getKeyDescription());
 				sampler.update(controller, action.getAxis2D(false));
 
-				if (sampler.isSwipedUp())
+				if (sampler.isSwipedUp() && upCallback != null) {
+					triggerHapticPulse(controller, 0.001f, 400, 0.5f);
 					upCallback.run();
-				if (sampler.isSwipedDown())
+				}
+				if (sampler.isSwipedDown() && downCallback != null) {
+					triggerHapticPulse(controller, 0.001f, 400, 0.5f);
 					downCallback.run();
-				if (sampler.isSwipedLeft())
+				}
+				if (sampler.isSwipedLeft() && leftCallback != null) {
+					triggerHapticPulse(controller, 0.001f, 400, 0.5f);
 					leftCallback.run();
-				if (sampler.isSwipedRight())
+				}
+				if (sampler.isSwipedRight() && rightCallback != null) {
+					triggerHapticPulse(controller, 0.001f, 400, 0.5f);
 					rightCallback.run();
+				}
 			}
 		}
 	}
@@ -1324,8 +1332,8 @@ public class MCOpenVR
 
 		processScrollInput(GuiHandler.keyScrollAxis, () -> InputSimulator.scrollMouse(0, 1), () -> InputSimulator.scrollMouse(0, -1));
 		processScrollInput(keyHotbarScroll, () -> changeHotbar(-1), () -> changeHotbar(1));
-		processSwipeInput(keyHotbarSwipeX, () -> changeHotbar(1), () -> changeHotbar(-1), () -> {}, () -> {});
-		processSwipeInput(keyHotbarSwipeY, () -> {}, () -> {}, () -> changeHotbar(-1), () -> changeHotbar(1));
+		processSwipeInput(keyHotbarSwipeX, () -> changeHotbar(1), () -> changeHotbar(-1), null, null);
+		processSwipeInput(keyHotbarSwipeY, null, null, () -> changeHotbar(-1), () -> changeHotbar(1));
 
 		// Reset this flag
 		unpressBindingsNextFrame = false;

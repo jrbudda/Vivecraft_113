@@ -352,23 +352,10 @@ public class GuiHandler {
 		//end Alt
 
 		if (keyScrollUp.isPressed() && mc.currentScreen != null) {
-			MCOpenVR.triggerBindingHapticPulse(keyScrollUp, 400);
-
-			//	if(mc.isGameFocused()) {
-			//		KeyboardSimulator.robot.mouseWheel(-120);
-			//	} else {
-			//		mc.currentScreen.mouseScrolled(4);
-			//	}
 			InputSimulator.scrollMouse(0, 4);
 		}
 
 		if (keyScrollDown.isPressed() && mc.currentScreen != null) {
-				MCOpenVR.triggerBindingHapticPulse(keyScrollDown, 400);
-			//	if(mc.isGameFocused()) {
-			//		KeyboardSimulator.robot.mouseWheel(120);
-			//	} else {
-			//		mc.currentScreen.mouseScrolled(-4);
-			//	}
 			InputSimulator.scrollMouse(0, -4);
 		}
 	}

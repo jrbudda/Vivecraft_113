@@ -42,7 +42,7 @@ public class GuiMenuWorldSettings extends GuiVROptionsBase {
 	@Override
 	public void initGui()
 	{
-		title = "Miscellaneous Settings";
+		title = "Menu World Settings";
 
 		super.initGui(miscSettings, true);
 

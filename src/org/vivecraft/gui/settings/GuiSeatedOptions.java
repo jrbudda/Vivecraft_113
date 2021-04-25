@@ -49,6 +49,7 @@ public class GuiSeatedOptions extends GuiVROptionsBase
 		vrSettings.keyholeX = 15;
 		vrSettings.xSensitivity = 1;
 		vrSettings.ySensitivity = 1;
+		vrSettings.seatedUseHMD = false;
 		vrSettings.seatedHudAltMode = false;
 		vrSettings.vrWorldRotationIncrement = 45f;
 		vrSettings.seatedFreeMove = false;
