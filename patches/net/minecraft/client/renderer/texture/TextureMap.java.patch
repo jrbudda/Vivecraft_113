@@ -1,0 +1,19 @@
+--- a/net/minecraft/client/renderer/texture/TextureMap.java
++++ b/net/minecraft/client/renderer/texture/TextureMap.java
+@@ -350,6 +350,7 @@
+                                     iresource.close();
+                                 }
+                             }
++                            LOGGER.error("Loaded {} {}",resourcelocation, resourcelocation1);
+                         }
+                     }
+                     catch (RuntimeException runtimeexception)
+@@ -359,7 +360,7 @@
+                     }
+                     catch (IOException ioexception)
+                     {
+-                        LOGGER.error("Using missing texture, unable to load {} : {}", resourcelocation1, ioexception);
++                        LOGGER.error("Using missing texture, unable to load {} {} : {}",resourcelocation, resourcelocation1, ioexception);
+                         ReflectorForge.FMLClientHandler_trackMissingTexture(resourcelocation1);
+                     }
+                 }

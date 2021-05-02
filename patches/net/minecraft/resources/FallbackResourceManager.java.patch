@@ -1,0 +1,10 @@
+--- a/net/minecraft/resources/FallbackResourceManager.java
++++ b/net/minecraft/resources/FallbackResourceManager.java
+@@ -53,6 +53,7 @@
+ 
+             if (iresourcepack1.resourceExists(this.type, resourceLocationIn))
+             {
++            	System.out.println("Found " + resourceLocationIn + " " + resourcelocation + " from " + iresourcepack1.getName());
+                 InputStream inputstream = null;
+ 
+                 if (iresourcepack != null)

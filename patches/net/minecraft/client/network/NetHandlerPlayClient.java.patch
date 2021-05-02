@@ -34,18 +34,17 @@
  import net.minecraft.util.text.ITextComponent;
  import net.minecraft.util.text.TextComponentTranslation;
  import net.minecraft.village.MerchantRecipeList;
-@@ -277,6 +284,10 @@
+@@ -277,6 +284,9 @@
  import net.minecraft.world.storage.MapData;
  import org.apache.logging.log4j.LogManager;
  import org.apache.logging.log4j.Logger;
 +import org.vivecraft.api.NetworkHelper;
 +import org.vivecraft.api.NetworkHelper.PacketDiscriminators;
-+import org.vivecraft.gameplay.OpenVRPlayer;
 +import org.vivecraft.render.PlayerModelController;
  
  public class NetHandlerPlayClient implements INetHandlerPlayClient
  {
-@@ -326,12 +337,17 @@
+@@ -326,12 +336,17 @@
  
      public NetHandlerPlayClient(Minecraft mcIn, GuiScreen p_i46300_2_, NetworkManager networkManagerIn, GameProfile profileIn)
      {
@@ -69,7 +68,7 @@
      }
  
      public ClientSuggestionProvider func_195513_b()
-@@ -358,18 +374,27 @@
+@@ -358,18 +373,26 @@
       */
      public void handleJoinGame(SPacketJoinGame packetIn)
      {
@@ -98,7 +97,6 @@
 +    	this.client.gameSettings.sendSettingsToServer();
 +    	this.netManager.sendPacket(new CPacketCustomPayload(CPacketCustomPayload.BRAND, (new PacketBuffer(Unpooled.buffer())).writeString(ClientBrandRetriever.getClientModName())));
 +    	// VIVE START - ask server if it's running this mod
-+    	this.client.vrPlayer.setFreeMove(true);
 +    	byte[] version = Minecraft.getMinecraft().minecriftVerString.getBytes(Charsets.UTF_8);
 +    	String s = NetworkHelper.channel.toString();
 +    	PacketBuffer pb = new PacketBuffer(Unpooled.buffer());
@@ -109,20 +107,16 @@
      }
  
      /**
-@@ -908,7 +933,11 @@
+@@ -908,7 +931,7 @@
       */
      public void handleDisconnect(SPacketDisconnect packetIn)
      {
 -        this.netManager.closeChannel(packetIn.getReason());
 +    	this.netManager.closeChannel(packetIn.getReason());
-+    	// VIVE START - no longer on a vanilla server, reset restricted state
-+    	this.client.vrPlayer.noTeleportClient = true;
-+    	OpenVRPlayer.get().setFreeMove(true);
-+    	// VIVE END - no longer on a vanilla server, reset restricted state  
      }
  
      /**
-@@ -2144,110 +2173,165 @@
+@@ -2144,110 +2167,152 @@
       */
      public void handleCustomPayload(SPacketCustomPayload packetIn)
      {
@@ -330,25 +324,12 @@
 +    				switch (dis){
 +    				case VERSION:
 +    					String v = packetbuffer.readString(1024);
-+    					this.client.vrPlayer.noTeleportClient = false;
-+    					this.client.vrPlayer.setFreeMove(Minecraft.getMinecraft().vrSettings.vrFreeMove);
 +    					this.client.printChatMessage("Vivecraft server mod detected: " +  v);
 +    					break;
 +    				case REQUESTDATA:
 +    					NetworkHelper.serverWantsData = true;
 +    					break;
 +    				case CLIMBING:
-+    					NetworkHelper.serverAllowsClimbey = packetbuffer.readBoolean();
-+    					if (packetbuffer.readableBytes() > 0) {
-+                            Minecraft.getMinecraft().climbTracker.serverblockmode = packetbuffer.readByte();
-+                            Minecraft.getMinecraft().climbTracker.blocklist.clear();
-+                            while (packetbuffer.readableBytes() > 0) {
-+                                String name = packetbuffer.readString(16384);
-+                                Block block = IRegistry.BLOCK.getObjectRaw(new ResourceLocation(name));
-+                                if (block != null)
-+                                    Minecraft.getMinecraft().climbTracker.blocklist.add(block);
-+                            }
-+                        }
 +    					break;
 +    				case TELEPORT:
 +    					NetworkHelper.serverSupportsDirectTeleport = true;
@@ -390,7 +371,7 @@
      /**
       * May create a scoreboard objective, remove an objective from the scoreboard or update an objectives' displayname
       */
-@@ -2553,4 +2637,15 @@
+@@ -2553,4 +2618,15 @@
      {
          return this.nbtQueryManager;
      }

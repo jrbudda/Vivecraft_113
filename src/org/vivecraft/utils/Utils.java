@@ -35,7 +35,6 @@ import org.vivecraft.utils.lwjgl.Vector4f;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import jopenvr.HmdMatrix34_t;
 import net.minecraft.util.math.Vec3d;
 import org.apache.commons.io.IOUtils;
 
@@ -47,6 +46,10 @@ public class Utils
 
 	public static de.fruitfly.ovr.structs.Vector3f convertToOVRVector(Vector3f vector) {
 		return new de.fruitfly.ovr.structs.Vector3f(vector.x, vector.y, vector.z);
+	}
+
+	public static de.fruitfly.ovr.structs.Vector3f convertToOVRVector(Vec3d vector) {
+		return new de.fruitfly.ovr.structs.Vector3f((float)vector.x, (float)vector.y, (float)vector.z);
 	}
 	
 	public static Matrix4f convertOVRMatrix(de.fruitfly.ovr.structs.Matrix4f matrix) {
@@ -94,23 +97,6 @@ public class Utils
 		return mat;
 	}
 	
-	public static HmdMatrix34_t convertToMatrix34(Matrix4f matrix) {
-		HmdMatrix34_t mat = new HmdMatrix34_t();
-		mat.m[0 + 0 * 4] = matrix.m00;
-		mat.m[1 + 0 * 4] = matrix.m10;
-		mat.m[2 + 0 * 4] = matrix.m20;
-		mat.m[3 + 0 * 4] = matrix.m30;
-		mat.m[0 + 1 * 4] = matrix.m01;
-		mat.m[1 + 1 * 4] = matrix.m11;
-		mat.m[2 + 1 * 4] = matrix.m21;
-		mat.m[3 + 1 * 4] = matrix.m31;
-		mat.m[0 + 2 * 4] = matrix.m02;
-		mat.m[1 + 2 * 4] = matrix.m12;
-		mat.m[2 + 2 * 4] = matrix.m22;
-		mat.m[3 + 2 * 4] = matrix.m32;
-		return mat;
-	}
-
 	public static double lerp(double from, double to, double percent){
 		return from+(to-from)*percent;
 	}
@@ -211,6 +197,19 @@ public class Utils
 		return new Vector3f((float)vector.x, (float)vector.y, (float)vector.z);
 	}
 
+	public static Vec3d convertToVec3d(Vector3 vector) {
+		return new Vec3d(vector.getX(), vector.getY(), vector.getZ());
+	}
+
+	public static Vec3d convertToVec3d(Vector3f vector) {
+		return new Vec3d(vector.x, vector.y, vector.z);
+	}
+
+	public static Vector3f transformVector(Matrix4f matrix, Vector3f vector, boolean point) {
+    	Vector4f vec = Matrix4f.transform(matrix, new Vector4f(vector.x, vector.y, vector.z, point ? 1 : 0), null);
+    	return new Vector3f(vec.x, vec.y, vec.z);
+	}
+
 	public static Quaternion quatLerp(Quaternion start, Quaternion end, float fraction) {
 		Quaternion quat = new Quaternion();
 		quat.w = start.w + (end.w - start.w) * fraction;
@@ -235,15 +234,15 @@ public class Utils
 	}
 
 	public static byte[] loadAsset(String name, boolean required) {
-		InputStream is = VRShaders.class.getResourceAsStream("/assets/vivecraft/" + name);
+		InputStream is = VRShaders.class.getResourceAsStream("/assets/minecraft/vivecraft/" + name);
 		byte[] out = new byte[0];
 		try {
 			if (is == null) {
 				//uhh debugging?
 				Path dir = Paths.get(System.getProperty("user.dir")); // ../mcpxxx/jars/
-				Path p5 = dir.getParent().resolve("src/resources/assets/vivecraft/" + name);
+				Path p5 = dir.getParent().resolve("src/resources/assets/minecraft/vivecraft/" + name);
 				if (!p5.toFile().exists()) {
-					p5 = dir.getParent().getParent().resolve("resources/assets/vivecraft/" + name);
+					p5 = dir.getParent().getParent().resolve("resources/assets/minecraft/vivecraft/" + name);
 				}
 				if (p5.toFile().exists()) {
 					is = new FileInputStream(p5.toFile());
@@ -444,9 +443,6 @@ public class Utils
 		return out.toByteArray();
 	}
 
-	public static Vec3d convertToVec3d(Vector3 vector) {
-		return new Vec3d(vector.getX(), vector.getY(), vector.getZ());
-	}
 	public static Quaternion slerp(Quaternion start, Quaternion end, float alpha) {
 		final float d = start.x * end.x + start.y * end.y + start.z * end.z + start.w * end.w;
 		float absDot = d < 0.f ? -d : d;
@@ -485,6 +481,14 @@ public class Utils
 		double y = start.y + (end.y - start.y) * fraction;
 		double z = start.z + (end.z - start.z) * fraction;
 		return new Vec3d(x, y, z);
+	}
+
+	public static long microTime() {
+		return System.nanoTime() / 1000L;
+	}
+
+	public static long milliTime() {
+		return System.nanoTime() / 1000000L;
 	}
 
 	public static void printStackIfContainsClass(String className) {

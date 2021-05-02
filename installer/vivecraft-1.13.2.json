@@ -9,7 +9,6 @@
 	"version": "$VERSION",
 	"mcVersion": "$MCVERSION",
 	"mainClass": "net.minecraft.launchwrapper.Launch",
-	"jar": "$MCVERSION",
 	"arguments": {
     "game": [
       "--tweakClass",
@@ -25,25 +24,11 @@
 		"MMC-hint": "local"
 	},
 	{
-		"name": "org.ow2.asm:asm-all:5.0.3"
-	}, 
-	{
-		"url": "http://central.maven.org/maven2/", 
-		"name": "org.json:json:20140107"
-	}, 
+		"name": "org.ow2.asm:asm-all:5.2",
+		"url": "http://files.minecraftforge.net/maven/"
+	},
 	{
 		"name": "net.minecraft:launchwrapper:1.12"
-	}, 
-	{
-		"url": "http://vivecraft.org/jar/", 
-		"name": "com.sun:jna:4.2.1"
-	}, 
-	{
-		"url": "http://vivecraft.org/jar/", 
-		"name": "de.fruitfly.ovr:JRift:0.8.0.0.1"
-	}, 
-	{
-		"name": "java3d:vecmath:1.5.2"
 	}
 	]
 }

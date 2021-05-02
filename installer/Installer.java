@@ -38,9 +38,9 @@ public class Installer extends JPanel  implements PropertyChangeListener
 	private static final boolean ALLOW_FORGE_INSTALL = false; 
 	private static final boolean DEFAULT_FORGE_INSTALL = false; 
 	private static final boolean ALLOW_HYDRA_INSTALL = false; 
-	private static final boolean ALLOW_KATVR_INSTALL = true; 
-	private static final boolean ALLOW_KIOSK_INSTALL = true; 
-	private static final boolean ALLOW_HRTF_INSTALL = true; 
+	private static final boolean ALLOW_KATVR_INSTALL = false; 
+	private static final boolean ALLOW_KIOSK_INSTALL = false; 
+	private static final boolean ALLOW_HRTF_INSTALL = false; 
 	private static final boolean ALLOW_SHADERSMOD_INSTALL = false;  
 
 	private static final boolean NEEDS_2010_REDIST = false;
@@ -58,22 +58,20 @@ public class Installer extends JPanel  implements PropertyChangeListener
     private static final String MC_VERSION        = "1.13.2";
     private static final String MC_MD5            = "0d20673fc03f9c6a60279146ee1b1a14";
 	private static final String OF_LIB_PATH       = "libraries/optifine/OptiFine/";
-    private static final String OF_FILE_NAME      = "1.13.2_HD_U_E5";
-    private static final String OF_JSON_NAME      = "1.13.2_HD_U_E5";
-    private static final String OF_MD5            = "314315A261CDBB170F88CECD45A049CC";
+    private static final String OF_FILE_NAME      = "1.13.2_HD_U_E7";
+    private static final String OF_JSON_NAME      = "1.13.2_HD_U_E7";
+    private static final String OF_MD5            = "CBC08AA8A74D246C11B1E993DE18E266";
     private static final String OF_VERSION_EXT    = ".jar";
     private static String FORGE_VERSION     = "14.23.5.2796";
 	/* END OF DO NOT RENAME */
 
-	private static final String DEFAULT_PROFILE_NAME = "ViveCraft " + MINECRAFT_VERSION;
-	private static final String DEFAULT_PROFILE_NAME_FORGE = "ViveCraft-Forge " + MINECRAFT_VERSION;
-	private static final String GITHUB_LINK = "https://github.com/jrbudda/Vivecraft_112";
+	private static final String DEFAULT_PROFILE_NAME = "Vivecraft NONVR " + MINECRAFT_VERSION;
+	private static final String DEFAULT_PROFILE_NAME_FORGE = "Vivecraft-Forge " + MINECRAFT_VERSION;
+	private static final String GITHUB_LINK = "https://github.com/jrbudda/Vivecraft_113";
 	private static final String HOMEPAGE_LINK = "http://www.vivecraft.org";
 	private static final String DONATION_LINK = "https://www.patreon.com/jrbudda";
     private static final String ORIG_FORGE_VERSION = FORGE_VERSION;
 	
-	private String mc_url = "https://s3.amazonaws.com/Minecraft.Download/versions/" + MINECRAFT_VERSION + "/" + MINECRAFT_VERSION +".jar";
-
 	private InstallTask task;
 	private static ProgressMonitor monitor;
 	static private File targetDir;
@@ -159,6 +157,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 		}
 
 		version = "UNKNOWN";
+		
 		try {
 			InputStream ver = Installer.class.getResourceAsStream("version");
 			if( ver != null )
@@ -168,10 +167,16 @@ public class Installer extends JPanel  implements PropertyChangeListener
 				{
 					jar_id = tok[0];
 					version = tok[1];
+				} else {
+						   throw new Exception("token length is 0!");
+						}
+			} else {
+				throw new Exception("version stream is null!");
 				}
+		} catch (Exception e) { 
+						JOptionPane.showMessageDialog(null,
+							e.getMessage(),"",JOptionPane.WARNING_MESSAGE);
 			}
-		} catch (IOException e) { }
-
 		// Read release notes, save to file
 		String tmpFileName = System.getProperty("java.io.tmpdir") + releaseNotePathAddition + "Vivecraft" + version.toLowerCase() + "_release_notes.txt";
 		releaseNotes = new File(tmpFileName);
@@ -575,8 +580,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 					}
 				}
 			}
-			catch (NoSuchFieldException e) {}
-			catch (IllegalAccessException e) {}
+			catch (Exception e) {}
 
 
 			finalMessage = "Failed: Couldn't download C++ redistributables. ";
@@ -592,13 +596,16 @@ public class Installer extends JPanel  implements PropertyChangeListener
 
 			for (int i = 1; i <= 3; i++)
 			{
+			
+				if (monitor.isCanceled()) return null;
+
 				if (DownloadOptiFine())
 				{
 					// Got it!
 					downloadedOptifine = true;
 					break;
-				}
-
+				}		
+				
 				// Failed. Sleep a bit and retry...
 				if (i < 3) {
 					try {
@@ -640,17 +647,6 @@ public class Installer extends JPanel  implements PropertyChangeListener
 			}
 
 			monitor.setProgress(50);
-			monitor.setNote("Checking for base game...");
-
-
-			if(!isMultiMC)
-				if(!SetupMinecraftAsLibrary())
-				{
-					JOptionPane.showMessageDialog(null,
-							"Could not locate or download base game. The Mincraft Launcher will attempt to download it.",
-							"Warning!",JOptionPane.WARNING_MESSAGE);
-
-				}
 
 			// VIVE START - install openVR
 			monitor.setProgress(52);
@@ -714,6 +710,9 @@ public class Installer extends JPanel  implements PropertyChangeListener
 				monitor.close();
 				return null;
 			}
+			
+			finalMessage = "Failed to setup HRTF.";
+
 			if(useHrtf.isSelected())
 			{
 				monitor.setProgress(85);
@@ -754,7 +753,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 						(profileCreated == false ? " and Edit Profile->Use Version " + minecriftVersionName : " and select the '" + getMinecraftProfileName(useForge.isSelected(), useShadersMod.isSelected()) + "' profile.") +
 						"\nPlease download OptiFine " + OF_FILE_NAME + " from https://optifine.net/downloads before attempting to play." +
 						"\nDo not run and install it, instead rename the file to OptiFine-" + OF_FILE_NAME + " (note the hyphen) and manually place it into the following directory:" +
-						"\n" + (isMultiMC ? new File(mmcinst, "libraries").getAbsolutePath() : new File(targetDir, OF_LIB_PATH + OF_JSON_NAME).getAbsolutePath());
+						"\n" + (isMultiMC ? new File(mmcinst, "libraries").getAbsolutePath() : new File(targetDir, OF_LIB_PATH + OF_FILE_NAME).getAbsolutePath());
 			}
 			else {
 				if(isMultiMC && mmcinst != null)
@@ -788,11 +787,11 @@ public class Installer extends JPanel  implements PropertyChangeListener
 			boolean deleted = false;
 
 			try {
-				File fod = new File(targetDir,OF_LIB_PATH+OF_JSON_NAME);
+				File fod = new File(targetDir,OF_LIB_PATH+OF_FILE_NAME);
 				if(isMultiMC)
 					fod = new File(mmcinst,"libraries");
 				fod.mkdirs();
-				File fo = new File(fod,"OptiFine-"+OF_JSON_NAME+".jar");
+				File fo = new File(fod,"OptiFine-"+OF_FILE_NAME+".jar");
 
 				// Attempt to get the Optifine MD5
 				String optOnDiskMd5 = GetMd5(fo);
@@ -812,6 +811,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 						deleted = fo.delete();
 					}
 					catch (Exception ex1) {
+						JOptionPane.showMessageDialog(null, "Could not delete existing Optifine jar " +ex1.getLocalizedMessage(), "Optifine Installation", JOptionPane.WARNING_MESSAGE);
 						ex1.printStackTrace();
 					}
 				}
@@ -833,6 +833,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 						deleted = fo.delete();
 					}
 					catch (Exception ex1) {
+						JOptionPane.showMessageDialog(null, "Could not delete existing Optifine jar " +ex1.getLocalizedMessage(), "Download File", JOptionPane.WARNING_MESSAGE);
 						ex1.printStackTrace();
 					}
 					return false;
@@ -982,6 +983,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 				fos.flush();
 			}
 			catch(Exception ex) {
+				JOptionPane.showMessageDialog(null, "Could not download from " + surl + " to " + fo.getName() + " \r\n " + ex.getLocalizedMessage(), "Error downloading", JOptionPane.ERROR_MESSAGE);
 				ex.printStackTrace();
 				success = false;
 			}
@@ -999,7 +1001,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 					success = false;
 				}
 			} else {
-				JOptionPane.showMessageDialog(null, "Could not download file: " + surl, "Download File", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null, "Could not install " + surl, "Download File", JOptionPane.INFORMATION_MESSAGE);
 			}
 			return success;
 		}
@@ -1096,45 +1098,6 @@ public class Installer extends JPanel  implements PropertyChangeListener
 			return true;
 		}
 
-		private boolean SetupMinecraftAsLibrary() {
-			String s = "";
-			try {
-				File mc_jar = null;
-				String minecriftVersionName = "vivecraft-" + version + mod;
-				s+=	minecriftVersionName;
-				File tar = new File(targetDir, "versions" + File.separator + minecriftVersionName + File.separator +  minecriftVersionName + ".jar");
-				s+=MC_MD5 + " " + GetMd5(tar);
-				if(checkMD5(tar, MC_MD5)) return true;
-
-				if(mc_jar == null){
-					File vanilla = new File(targetDir, "versions" + File.separator + MINECRAFT_VERSION + File.separator + MINECRAFT_VERSION+".jar");
-					s+=MC_MD5 + " " + GetMd5(vanilla);
-					if(checkMD5(vanilla, MC_MD5)) mc_jar = vanilla;
-				}
-
-				if(mc_jar == null){
-					// Download the minecraft jar (we don't wont to require that it has previously been downloaded in Minecraft)
-					mc_jar = new File(tempDir + File.separator + MINECRAFT_VERSION + ".jar");
-					if (!mc_jar.exists() || !checkMD5(mc_jar, MC_MD5)) {
-						if (!downloadFile(mc_url, mc_jar, MC_MD5)) {
-							JOptionPane.showMessageDialog(null, " Error: Failed to download " + MINECRAFT_VERSION + ".jar from " + mc_url, "Warning", JOptionPane.ERROR_MESSAGE);
-							return false;
-						}
-					}
-				}
-
-				if(mc_jar == null) return false;
-
-				InputStream src = new FileInputStream(mc_jar);
-				tar.getParentFile().mkdirs();
-				return copyInputStreamToFile(src, tar);
-
-			} catch (Exception e) {
-				JOptionPane.showMessageDialog(null, " Error: "+e.getLocalizedMessage(), "Warning", JOptionPane.ERROR_MESSAGE);
-				return false;
-			}
-		}
-
 		private boolean ExtractVersion() {
 			if( jar_id != null )
 			{
@@ -1225,7 +1188,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 							if(isMultiMC && useForge.isSelected()) {
 								JSONArray tw = (JSONArray) root.get("+tweakers");
 								tw = new JSONArray();
-								tw.put("com.mtbs3d.minecrift.tweaker.MinecriftForgeTweaker");
+								tw.put("org.vivecraft.tweaker.MinecriftForgeTweaker");
 								tw.put("net.minecraftforge.fml.common.launcher.FMLTweaker");
 								tw.put("optifine.OptiFineForgeTweaker");
 								root.put("+tweakers", tw);
@@ -1237,7 +1200,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 							fwJson.close();
 						}
 						catch (Exception e) {
-							e.printStackTrace();
+							finalMessage += " Error: " + e.getMessage();
 						}
 
 						// Extract new lib
@@ -1254,7 +1217,7 @@ public class Installer extends JPanel  implements PropertyChangeListener
 
 						return ver_json_file.exists() && ver_file.exists();
 					} catch (Exception e) {
-						finalMessage += " Error: "+e.getLocalizedMessage();
+						finalMessage += " Error: " + e.getMessage();
 					}
 
 			}
@@ -1342,16 +1305,15 @@ public class Installer extends JPanel  implements PropertyChangeListener
 				java.text.DateFormat dateFormat=new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 				if (prof == null) {
 					prof = new JSONObject();
-					prof.put("name", profileName);
-					prof.put("useHopperCrashService", false);
-					prof.put("launcherVisibilityOnGameClose", "keep the launcher open");
 					prof.put("created", dateFormat.format(new java.util.Date()));
 					profiles.put(profileName, prof);
 				}
 
 				prof.put("lastVersionId", minecriftVer + mod);
 				prof.put("javaArgs", "-Xmx" + ramAllocation.getSelectedItem() + "G -Xms" + ramAllocation.getSelectedItem() + "G -XX:+UseParallelGC -XX:ParallelGCThreads=3 -XX:MaxGCPauseMillis=3 -Xmn256M -Dfml.ignoreInvalidMinecraftCertificates=true -Dfml.ignorePatchDiscrepancies=true");
-				root.put("selectedProfile", profileName);
+				prof.put("name", profileName);
+				prof.put("icon", "Creeper_Head");
+				prof.put("type", "custom");
 				prof.put("lastUsed", dateFormat.format(new java.util.Date()));
 				if(chkCustomGameDir.isSelected() && txtCustomGameDir.getText().trim() != ""){
 					prof.put("gameDir", txtCustomGameDir.getText());
@@ -1451,7 +1413,8 @@ public class Installer extends JPanel  implements PropertyChangeListener
 			return result;
 		}
 
-	}
+	}// End InstallTask
+	
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		if ("progress" == evt.getPropertyName()) {

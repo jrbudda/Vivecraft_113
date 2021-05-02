@@ -18,3 +18,27 @@
      }
  
      public synchronized byte[] getOptiFineResource(String name)
+@@ -119,6 +119,7 @@
+ 
+     public synchronized byte[] getOptiFineResourcePatched(String name, IResourceProvider resourceProvider)
+     {
++    	System.out.println("Get optifine resource " + name );
+         if (this.patterns != null && this.patchMap != null && resourceProvider != null)
+         {
+             name = Utils.removePrefix(name, "/");
+@@ -127,6 +128,7 @@
+ 
+             if (abyte == null)
+             {
++            	System.out.println("Get optifine resource abyte null" );
+                 return null;
+             }
+             else
+@@ -160,6 +162,7 @@
+         }
+         else
+         {
++        	System.out.println("Get optifine resource something null" );
+             return null;
+         }
+     }

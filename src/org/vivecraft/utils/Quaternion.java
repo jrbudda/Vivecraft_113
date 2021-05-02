@@ -5,7 +5,6 @@ import org.vivecraft.utils.lwjgl.Matrix4f;
 
 import de.fruitfly.ovr.structs.EulerOrient;
 import de.fruitfly.ovr.structs.Quatf;
-import jopenvr.OpenVRUtil;
 import net.minecraft.util.math.Vec3d;
 
 
@@ -195,12 +194,6 @@ public class Quaternion {
 		return new Quaternion(newW, newX, newY, newZ);
 	}
 
-	public Angle toEuler(){
-		Quaternion norm=this.normalized();
-		Quatf quat = new Quatf(norm.x,norm.y,norm.z,norm.w);
-		EulerOrient euler = OpenVRUtil.getEulerAnglesDegYXZ(quat);
-		return new Angle(euler.pitch,euler.yaw,euler.roll);
-	}
 
 	public Quaternion rotate(Axis axis, float degrees) {
 		//return this.multiply(new Quaternion(axis.getVector(), degrees));

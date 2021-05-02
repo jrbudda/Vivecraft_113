@@ -1,31 +1,11 @@
 --- a/net/minecraft/client/MainWindow.java
 +++ b/net/minecraft/client/MainWindow.java
-@@ -375,7 +375,10 @@
- 
-     public void updateVsyncFromGameSettings()
-     {
--        GLFW.glfwSwapInterval(this.mc.gameSettings.enableVsync ? 1 : 0);
-+    	//Vivecraft
-+    	GLFW.glfwSwapInterval(0);
-+        //GLFW.glfwSwapInterval(this.mc.gameSettings.enableVsync ? 1 : 0);
-+    	//
-     }
- 
-     public void close()
-@@ -597,11 +600,15 @@
-             this.mc.currentScreen.onResize(this.mc, this.scaledWidth, this.scaledHeight);
+@@ -101,7 +101,7 @@
+             GLFW.glfwWindowHint(135181, Config.getAntialiasingLevel());
          }
  
-+        if (mc.stereoProvider != null)
-+        	mc.stereoProvider.reinitFrameBuffers("Main Window Changed");
-+        
-         Framebuffer framebuffer = this.mc.getFramebuffer();
- 
-         if (framebuffer != null)
-         {
--            framebuffer.createBindFramebuffer(this.framebufferWidth, this.framebufferHeight);
-+        	//no plz.
-+            //framebuffer.createBindFramebuffer(this.framebufferWidth, this.framebufferHeight);
-         }
- 
-         if (this.mc.entityRenderer != null)
+-        this.handle = GLFW.glfwCreateWindow(this.width, this.height, "Minecraft 1.13.2", this.fullscreen ? this.monitor.getMonitorPointer() : 0L, 0L);
++        this.handle = GLFW.glfwCreateWindow(this.width, this.height, mcIn.minecriftVerString, this.fullscreen ? this.monitor.getMonitorPointer() : 0L, 0L);
+         mcIn.isWindowFocused = true;
+         this.setMonitorFromVirtualScreen();
+         GLFW.glfwMakeContextCurrent(this.handle);
